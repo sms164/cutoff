@@ -267,7 +267,11 @@ bestfits<-function(fitres){
   model$bictab<-data.frame(normal=c(NA)[rep(c(1), times=maxcp)], skew.normal=c(NA)[rep(c(1), times=maxcp)])
   model$bictab$normal<-nobj$no
   model$bictab$skew.normal<-nobj$sn
-  rownames(model$bictab)<-c("1 Component:  ", "2 Components: ", "3 Components: ", "4 Components: ", "5 Components: ")
+  componentnames<-vector()
+  for (i in 1:maxcp){
+    componentnames[i]<-paste(i, " Component(s):  ", sep="")  
+  }    
+  rownames(model$bictab)<-componentnames
   colnames(model$bictab)<-c("Normal", "Skew normal")
   model$summary<-data.frame(desc=c(paste(nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components ", sep=" "), paste("Skew normal with", nobj$minind$sn, "components ", sep=" "), paste("Normal with", nobj$minind$no, "components ", sep=" "), "Skew normal with 2 components ", "Normal with 2 components "), bic=c(nobj$best$bic, nobj$sn[nobj$minind$sn], nobj$no[nobj$minind$no], nobj$sn[2], nobj$no[2]))
   rownames(model$summary)<-c("Best Overall", "Best Skew normal  ", "Best Normal", "Two Skew normal", "Two Normal")
