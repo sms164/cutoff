@@ -1464,3 +1464,7 @@ outdataobject<-outputdata(standindet=standindetobject,specindet=specindetobject)
 summaryobject<-summarytable(outdataobj=outdataobject, standindetobj=standindetobject, specindetobj=specindetobject)
 outtable<-summaryobject$outtab
 outtable
+
+
+
+
