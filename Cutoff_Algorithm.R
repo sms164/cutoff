@@ -578,7 +578,7 @@ multcut<-function(uncertobj){
 #[IC7]  rawuncertgraph
 #-----------------------------------------------
 #Displays the overall uncertainty function (which is 1-max(probability of membership to component i)) with the possible cut-points overlaid. Note: Sometimes the cutpoint does not line up exactly with a peak in the uncertainty function, which looks like a flaw, but is not. In a two component setting, the cutpoint will always occur at the peak of the uncertainty but this is not always the case when there are more than two components.
-rawuncertgraph<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),setcolor=c(
+rawuncertgraph<-function(uncertobj,multcutobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -594,29 +594,31 @@ rawuncertgraph<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,N
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
     grobj$minval<-(1/10)*trunc(10*min(uncertobj$datawithids$data)) 
     grobj$maxval<-max(uncertobj$datawithids$data)
-    plot(uncertobj$v, uncertobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", uncertobj$desc$dist, "with", uncertobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty")
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
-    plot(uncertobj$v, uncertobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", uncertobj$desc$dist, "with", uncertobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
   }
-  
+
+  plot(uncertobj$v, uncertobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", uncertobj$desc$dist, "with", uncertobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
+    
   col<-setcolor
   ncomp<-uncertobj$desc$ncomp
   for (i in 1:(uncertobj$desc$ncomp-1)){
     abline(v =multcutobj$cutpoint[i], untf = T, col=col[i], lwd=2)
   }
   
-  legtxt<-vector("character", ncomp)
-  colors<-vector("character", ncomp)
-  for (i in 2:ncomp){
-    legtxt[i]<-multcutobj$cutnames[i-1]
-    colors[i]<-col[i-1]
-  }  
-  legtxt[1]<-"Uncertainty"
-  colors[1]<-col[length(col)]
-  linewidth<-c(2)[rep(c(1), times=ncomp)]
-  legend("topright", col=colors, lwd=c(1,linewidth), legend=legtxt, xjust=1, seg.len=3)
+  if (suppresslegend==F) {
+    legtxt<-vector("character", ncomp)
+    colors<-vector("character", ncomp)
+    for (i in 2:ncomp){
+      legtxt[i]<-paste(multcutobj$cutnames[i-1], " , x=", round(multcutobj$cutpoint[i-1], 2), sep="")
+      colors[i]<-col[i-1]
+    }  
+    legtxt[1]<-"Uncertainty"
+    colors[1]<-col[length(col)]
+    linewidth<-c(2)[rep(c(1), times=ncomp)]
+    legend("topright", col=colors, lwd=c(1,linewidth), legend=legtxt, xjust=1, seg.len=3)
+  }
 }
 
 
