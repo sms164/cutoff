@@ -626,7 +626,7 @@ rawuncertgraph<-function(uncertobj,multcutobj,xlab="X Value",xlim=c(NA,NA),suppr
 #[IC8]  rawdistgraph
 #-----------------------------------------------
 #Displays the distributions of all the components for the chosen combination of distribution and number of components. 
-rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,setcolor=c(
+rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -706,8 +706,10 @@ rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",s
   legtxt[ncomp+1]<-"Overall Distribution"
   colors[ncomp+1]<-grobj$colors[length(grobj$colors)]
   linetype<-c(1)[rep(c(1), times=ncomp)]
-  legend("topright", col=colors, lwd=2, legend=legtxt, xjust=1, seg.len=3, title="Distributions", lty=c(linetype,2))
-  
+  if (suppresslegend==F) {
+    legend("topright", col=colors, lwd=2, legend=legtxt, xjust=1, seg.len=3, title="Distributions", lty=c(linetype,2))
+  }
+    
   #return(grobj)
 }
 
@@ -716,7 +718,7 @@ rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",s
 #-----------------------------------------------
 #Displays which component each bar of the histogram would be assigned to. 
 
-rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,setcolor=c(
+rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -763,15 +765,17 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
     }
   }
   plot(hist, col=colors, xlab=xlab, ylab="Density", main=paste("Classification by", uncertobj$desc$dist, "with", ncomp, "components", sep = " "), freq=F, lty="blank")
-  legtxt<-vector("character", ncomp)
-  colors<-vector("character", ncomp)
-  for (i in 1:ncomp){
-    legtxt[i]<-paste("Component ", i, sep="")
-    colors[i]<-col[i]
-  }  
-  linetype<-c(1)[rep(c(1), times=ncomp)]
-  legend("topright", col=colors, lwd=3, legend=legtxt, xjust=1, seg.len=3, title="Components", lty=linetype)
   
+  if (suppresslegend==F){
+    legtxt<-vector("character", ncomp)
+    colors<-vector("character", ncomp)
+    for (i in 1:ncomp){
+      legtxt[i]<-paste("Component ", i, sep="")
+      colors[i]<-col[i]
+    }  
+    linetype<-c(1)[rep(c(1), times=ncomp)]
+    legend("topright", col=colors, lwd=3, legend=legtxt, xjust=1, seg.len=3, title="Components", lty=linetype)
+  }
 }
 
 #-----------------------------------------------
@@ -951,7 +955,7 @@ specindet<-function(uncertobj,multcutobj,certlevel,cutcomp=0){
 #[IC12]  cutuncertgraph
 #-----------------------------------------------
 #Displays the uncertainty function after components have been combined to create positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively).
-cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),setcolor=c(
+cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -987,7 +991,9 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),setcolor=c(
               "Indeterminate Range with", 
               paste("95% Certainty: (", round(cutobj$bound95[1], 2), " , ", round(cutobj$bound95[2], 2), ")", sep ="")
     )
-    legend("topright", col=c(color[9], color[6], color[2], color[2], "white", color[4], color[4], "white"), lwd=1, lty=c(1,1,2,1,1,2,1,1),legend=legtxt, xjust=1, seg.len=1, title="Uncertainties, Cutpoint, and Boundaries")
+    if (suppresslegend==F){
+      legend("topright", col=c(color[9], color[6], color[2], color[2], "white", color[4], color[4], "white"), lwd=1, lty=c(1,1,2,1,1,2,1,1),legend=legtxt, xjust=1, seg.len=1, title="Uncertainties, Cutpoint, and Boundaries")
+      }
   } else {
     abline(h =(1-cutobj$desc$uncertlevel), untf = T, col=color[3], lwd=1, lty=2)
     abline(v =cutobj$bound, untf = T, col=color[3], lwd=1)
@@ -997,7 +1003,9 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),setcolor=c(
               "Indeterminate Range with", 
               paste((100*cutobj$desc$uncertlevel), "% Certainty: (", round(cutobj$bound[1], 2), " , ", round(cutobj$bound[2], 2), ")", sep ="")
     )
-    legend("topright", col=c(color[9],color[6], color[3], color[3], "white"), lwd=1, lty=c(1,1,2,1), legend=legtxt, xjust=1, seg.len=1, title="Cutpoint, Uncertainties, and Boundaries")
+    if (suppresslegend==F){
+      legend("topright", col=c(color[9],color[6], color[3], color[3], "white"), lwd=1, lty=c(1,1,2,1), legend=legtxt, xjust=1, seg.len=1, title="Cutpoint, Uncertainties, and Boundaries")
+    }
   }
 }
 
@@ -1005,7 +1013,7 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),setcolor=c(
 #[IC13]  cutdistgraph
 #-----------------------------------------------
 #Displays the distributions of the positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively). 
-cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,setcolor=c(
+cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -1080,26 +1088,30 @@ cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbr
   if (cutobj$type=="Standard") {
     abline(v =cutobj$bound90, untf = T, col=color[2], lwd=1)
     abline(v =cutobj$bound95, untf = T, col=color[4], lwd=1)
-    legtxt<-c("Negative Distribution",
-              "Positive Distribution",
-              "Overall Distribution",
-              paste("Cutpoint=", round(cutobj$cutpoint, 2), sep =""), 
-              "Indeterminate Range with", 
-              paste("90% Certainty: (", round(cutobj$bound90[1], 2), " , ", round(cutobj$bound90[2], 2), ")", sep =""),
-              "Indeterminate Range with", 
-              paste("95% Certainty: (", round(cutobj$bound95[1], 2), " , ", round(cutobj$bound95[2], 2), ")", sep ="")
-    )
-    legend("topright", col=c(color[1], color[5], color[9], color[6], color[2], "white", color[4], "white"), lwd=c(2,2,2,1,1,1,1,1), legend=legtxt, xjust=1, seg.len=3, title="Distributions, Cutpoint, and Boundaries", lty=c(1,1,2,1,1,1,1,1))
+    if (suppresslegend==F) {
+      legtxt<-c("Negative Distribution",
+                "Positive Distribution",
+                "Overall Distribution",
+                paste("Cutpoint=", round(cutobj$cutpoint, 2), sep =""), 
+                "Indeterminate Range with", 
+                paste("90% Certainty: (", round(cutobj$bound90[1], 2), " , ", round(cutobj$bound90[2], 2), ")", sep =""),
+                "Indeterminate Range with", 
+                paste("95% Certainty: (", round(cutobj$bound95[1], 2), " , ", round(cutobj$bound95[2], 2), ")", sep ="")
+      )
+      legend("topright", col=c(color[1], color[5], color[9], color[6], color[2], "white", color[4], "white"), lwd=c(2,2,2,1,1,1,1,1), legend=legtxt, xjust=1, seg.len=3, title="Distributions, Cutpoint, and Boundaries", lty=c(1,1,2,1,1,1,1,1))
+    }
   } else {
     abline(v =cutobj$bound, untf = T, col=color[3], lwd=1)
-    legtxt<-c("Negative Distribution",
-              "Positive Distribution",
-              "Overall Distribution",
-              paste("Cutpoint=", round(cutobj$cutpoint, 2), sep =""), 
-              "Indeterminate Range with", 
-              paste((cutobj$desc$uncertlevel*100), "% Certainty: (", round(cutobj$bound[1], 2), " , ", round(cutobj$bound[2], 2), ")", sep ="")
-    )
-    legend("topright", col=c(color[1], color[5], color[9], color[6], color[3], "white"), lwd=c(2,2,2,1,1,1), legend=legtxt, xjust=1, seg.len=3, title="Distributions, Cutpoint, and Boundaries", lty=c(1,1,2,1,1,1))
+    if (suppresslegend==F){
+      legtxt<-c("Negative Distribution",
+                "Positive Distribution",
+                "Overall Distribution",
+                paste("Cutpoint=", round(cutobj$cutpoint, 2), sep =""), 
+                "Indeterminate Range with", 
+                paste((cutobj$desc$uncertlevel*100), "% Certainty: (", round(cutobj$bound[1], 2), " , ", round(cutobj$bound[2], 2), ")", sep ="")
+      )
+      legend("topright", col=c(color[1], color[5], color[9], color[6], color[3], "white"), lwd=c(2,2,2,1,1,1), legend=legtxt, xjust=1, seg.len=3, title="Distributions, Cutpoint, and Boundaries", lty=c(1,1,2,1,1,1))
+    }
   }
 
   #return(grobj)
