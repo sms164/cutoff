@@ -650,7 +650,6 @@ rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",s
     grobj$maxval<-xlim[2]
   }
   
-  
   grobj$t<-seq(grobj$minval,grobj$maxval,length=1000) 
   
   grobj$gpar<-data.frame(mean=c(NA)[rep(c(1), times=ncomp)], sd=c(NA)[rep(c(1), times=ncomp)], shape=c(NA)[rep(c(1), times=ncomp)], pii=c(NA)[rep(c(1), times=ncomp)])
@@ -664,7 +663,6 @@ rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",s
   grobj$coloropt[[4]]<-c(color[1], color[3], color[4], color[5], color[9])
   grobj$coloropt[[5]]<-c(color[1], color[2], color[3], color[4], color[5], color[9])
   grobj$colors<-grobj$coloropt[[ncomp]]
-  
   
   for (i in 1:ncomp){
     grobj$gpar$mean[i]=pickobj$par$mean[i]
@@ -728,13 +726,17 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
   "black"            #9
 )){
   data<-uncertobj$datawithids$data
+  grobj<-list()
   
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
-    grobj$minval<-(1/10)*trunc(10*min(pickobj$datawithids$data)) 
+    grobj$minval<-(1/10)*trunc(10*min(data)) 
     grobj$maxval<-max(data)
+    hist<-hist(data, breaks=setbreaks, plot=F)
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
+    datalim<-data[ which(data>=grobj$minval & data<=grobj$maxval)]
+    hist<-hist(datalim, breaks=setbreaks, plot=F)
   }
   
   ncomp<-uncertobj$desc$ncomp
