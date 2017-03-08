@@ -590,12 +590,15 @@ rawuncertgraph<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,N
   "black"            #9
 )){
   
-  if (is.na(xlim[1])==T | is.na(xlim[2])==F) {   
-    grobj$minval<-(1/10)*trunc(10*min(pickobj$datawithids$data)) 
-    grobj$maxval<-max(data)
+  grobj<-list()
+  if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
+    grobj$minval<-(1/10)*trunc(10*min(uncertobj$datawithids$data)) 
+    grobj$maxval<-max(uncertobj$datawithids$data)
+    plot(uncertobj$v, uncertobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", uncertobj$desc$dist, "with", uncertobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty")
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
+    plot(uncertobj$v, uncertobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", uncertobj$desc$dist, "with", uncertobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
   }
   
   col<-setcolor
@@ -639,7 +642,7 @@ rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",s
   data<-pickobj$datawithids$data
   color<-setcolor
   
-  if (is.na(xlim[1])==T | is.na(xlim[2])==F) {   
+  if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
     grobj$minval<-(1/10)*trunc(10*min(pickobj$datawithids$data)) 
     grobj$maxval<-max(data)
   } else {
@@ -726,7 +729,7 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
 )){
   data<-uncertobj$datawithids$data
   
-  if (is.na(xlim[1])==T | is.na(xlim[2])==F) {   
+  if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
     grobj$minval<-(1/10)*trunc(10*min(pickobj$datawithids$data)) 
     grobj$maxval<-max(data)
   } else {
@@ -944,7 +947,7 @@ specindet<-function(uncertobj,multcutobj,certlevel,cutcomp=0){
 #[IC12]  cutuncertgraph
 #-----------------------------------------------
 #Displays the uncertainty function after components have been combined to create positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively).
-cutuncertgraph<-function(cutobj,xlab="Optical Density",scalecontrol=F,setcolor=c(
+cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -957,14 +960,13 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",scalecontrol=F,setcolor=c
 )){
   color=setcolor
   
-  if (scalecontrol==F) {
+  if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
     plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=paste("Uncertainty Plot of", cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " "),type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty")
   } else {
-    datasorted<-cutobj$datawithids[order(cutobj$datawithids$data),] 
-    maxless5<-datasorted$data[length(datasorted$data)-5]
-    plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=paste("Uncertainty Plot of", cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " "),type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty", xlim=c(round(min(cutobj$datawithids$data),digits=1),maxless5), sub="Note: This version of the graph is scale controlled and extreme values may be omitted.")
+    grobj$minval<-xlim[1]
+    grobj$maxval<-xlim[2]
+    plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=paste("Uncertainty Plot of", cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " "),type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty", xlim=c(grobj$minval,grobj$maxval))
   }
-  
   
   abline(v =cutobj$cutpoint, untf = T, col=color[6], lwd=1)
   if (cutobj$type=="Standard") {
@@ -999,7 +1001,7 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",scalecontrol=F,setcolor=c
 #[IC13]  cutdistgraph
 #-----------------------------------------------
 #Displays the distributions of the positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively). 
-cutdistgraph<-function(cutobj,pickobj,scalecontrol=F,xlab="Optical Density",setbreaks=100,setcolor=c(
+cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -1020,16 +1022,15 @@ cutdistgraph<-function(cutobj,pickobj,scalecontrol=F,xlab="Optical Density",setb
   grobj<-vector("list")
   grobj$gpar<-vector("list")
   
-  if (scalecontrol==F) {   
+  if (is.na(xlim[1])==T | is.na(xlim[2])==T) { 
+    grobj$minval<-(1/10)*trunc(10*min(pickobj$datawithids$data))     
     grobj$maxval<-max(data)
   } else {
-    datasorted<-pickobj$datawithids[order(pickobj$datawithids$data),] 
-    dataless5<- datasorted[1:(length(datasorted$data)-5),]
-    data<-dataless5$data
-    maxless5<-max(dataless5$data)
-    grobj$maxval<-maxless5
+    grobj$minval<-xlim[1]
+    grobj$maxval<-xlim[2]
   }
-  grobj$t<-seq(round(min(pickobj$datawithids$data),digits=1),grobj$maxval,length=1000) 
+
+  grobj$t<-seq(grobj$minval,grobj$maxval,length=1000) 
   
   grobj$gpar<-data.frame(mean=c(NA)[rep(c(1), times=ncomp)], sd=c(NA)[rep(c(1), times=ncomp)], shape=c(NA)[rep(c(1), times=ncomp)], pii=c(NA)[rep(c(1), times=ncomp)])
   grobj$gs<-vector("list", ncomp+1)
@@ -1096,9 +1097,7 @@ cutdistgraph<-function(cutobj,pickobj,scalecontrol=F,xlab="Optical Density",setb
     )
     legend("topright", col=c(color[1], color[5], color[9], color[6], color[3], "white"), lwd=c(2,2,2,1,1,1), legend=legtxt, xjust=1, seg.len=3, title="Distributions, Cutpoint, and Boundaries", lty=c(1,1,2,1,1,1))
   }
-  if (scalecontrol==T){
-    title(sub="Note: This version of the graph is scale controlled and extreme values may be omitted.")
-  }
+
   #return(grobj)
   
 }
