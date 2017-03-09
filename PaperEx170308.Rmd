@@ -5,7 +5,23 @@ date: "March 8, 2017"
 output: word_document
 ---
 
-```{r loadfunctions}
+```{r set_knitr_chunk_options, echo = F, warning=F, message=F}
+rm(list = ls())
+
+library(knitr)
+library(markdown)
+opts_chunk$set(message=FALSE, echo = F,
+               warning = F,fig.height = 5, fig.width = 10, tidy = F)
+
+#Work
+#opts_knit$set(root.dir = "C:/Users/ntdintern/Google Drive/Sarah Sullivan/Code")
+#School
+#opts_knit$set(root.dir = "H:/TFGH/Code")
+#Laptop
+opts_knit$set(root.dir = "/Users/sarahsullivan/Google Drive/Sarah Sullivan/Code")
+```
+
+```{r loadfunctions, echo=F, warning=F, message=F}
 library(mixsmsn)
 library(sn)
 #-----------------------------------------------
@@ -1286,6 +1302,7 @@ twobestdorest<-function(fitloopsobj,bestfit){
 
 ```
 
+
 ```{r example1}
 
 examp1<-read.csv(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex1.csv")
@@ -1329,10 +1346,11 @@ hist(examp2$data, breaks=100, main="Histogram of Data")
 dens<-density(examp2$data)
 plot(dens, main="Density of Data")
 
-fitloopsobject<-fitloops(datawithids=examp2)
-#might not run, if it doesn't, then load the full file: 
+#fitloopsobject<-fitloops(datawithids=examp2)
+  #might not run due to 5 component solution not being easily optimized, if it doesn't run, either load the full file, or run fitloopsobject<-fitloops(datawithids=examp2,maxcp=4): 
 load(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex2fitloops")
 fitloopsobject<-ex2
+
 bestfitsobject<-bestfits(fitres=fitloopsobject)
 bicgraph(model=bestfitsobject)
 
@@ -1360,7 +1378,7 @@ outtable
 
 ```
 
-```{r while loop}
+```{r while loop, echo=F}
 
 stop<-F
 iter<-0
