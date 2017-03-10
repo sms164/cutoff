@@ -301,11 +301,13 @@ bestfits<-function(fitres){
 
 bicgraph<-function(model,title="BIC by type and number of distributions",setcolor=c("magenta", "blue", "black")){
   color<-setcolor
+  buffer<-(max(model$bictab)-min(model$bictab))/20
+  ylim<-c(min(model$bictab)-buffer, max(model$bictab)+buffer)
   if (is.na(model$bictab$Normal[1])==F) {
-    plot(model$bictab$Normal, pch=1, col=color[1], main=title, xlab="Number of distributions", ylab="BIC", type="o",  xaxt="n")
+    plot(model$bictab$Normal, pch=1, col=color[1], main=title, xlab="Number of distributions", ylab="BIC", type="o",  xaxt="n", ylim=ylim)
     lines(model$bictab$`Skew-normal`, type="o", pch=2, lty=2, col=color[2])
   } else {
-    plot(model$bictab$Normal, type="o", pch=2, lty=2, col=color[2], main=title, xlab="Number of distributions", ylab="BIC",  xaxt="n")
+    plot(model$bictab$Normal, type="o", pch=2, lty=2, col=color[2], main=title, xlab="Number of distributions", ylab="BIC",  xaxt="n", ylim=ylim)
     lines(model$bictab$`Skew-normal`, pch=1, col=color[1], type="o")    
   }  
   points(model$bestdesc$ncomp,model$best$bic,type="o", pch="O", col=color[3],cex=2)
