@@ -115,11 +115,11 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       norms$ms[[i]][[j]]<-vector("list", 15)
       if (dists=="Both") {
         norms$mc[[i]][[j]]<-loopErr(data,i,j,"Normal")  
-        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew-normal")
+        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew.normal")
       } else if (dists=="Normal"){ 
         norms$mc[[i]][[j]]<-loopErr(data,i,j,"Normal")
-      } else if (dists=="Skew-normal"){
-        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew-normal")
+      } else if (dists=="Skew.normal"){
+        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew.normal")
       } else {
         stop(print("dists must be specified as 'Both' or 'Normal' or 'Skew-normal'"))
       }
@@ -138,7 +138,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       if (dists=="Normal"){ 
         norms$ms[[i]][[j]]<-vector("list")
         norms$ms[[i]][[j]]$bic<-NA
-      } else if (dists=="Skew-normal"){
+      } else if (dists=="Skew.normal"){
         norms$mc[[i]][[j]]<-vector("list")
         norms$mc[[i]][[j]]$bic<-NA
       }
@@ -165,7 +165,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       } else {
         nobj$lmin$mc[i]<-1
       }
-      if (dists=="Both" | dists=="Skew-normal"){
+      if (dists=="Both" | dists=="Skew.normal"){
         nobj$lmin$ms[i]<-which.min(nobj$ms[i,])
       } else {
         nobj$lmin$ms[i]<-1
@@ -188,12 +188,12 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     if (which.max(errors)<=maxcp){
       dist<-"Normal"
     } else {
-      dist<-"Skew-normal"
+      dist<-"Skew.normal"
     }
     if (ic<=2){
-      stop(paste("More than two loops of the mixture modeling algorithm failed for the", dist, "distribution with", ic, "component(s). First ensure that the necessary packages have been loaded correctly. If the packages are loaded correctly, check for extreme outliers (which may be dropped with extreme caution) or violations of skew-normal or normal distribution assumptions."))
+      stop(paste("More than two loops of the mixture modeling algorithm failed to converge for the", dist, "distribution with", ic, "component(s). First ensure that the necessary packages have been loaded correctly. If the packages are loaded correctly, check for extreme outliers (which may be dropped with extreme caution) or violations of skew-normal or normal distribution assumptions."))
     } else {
-      stop(paste("More than two loops of the mixture modeling algorithm failed for the", dist, "distribution with", ic, "component(s). Consider choosing a lower number of components (the default is 5) via the maxcp option of the fitloops function."))
+      stop(paste("More than two loops of the mixture modeling algorithm failed to converge for the", dist, "distribution with", ic, "component(s). Consider choosing a lower number of components (the default is 5) via the maxcp option of the fitloops function."))
     }
   }  
 }
