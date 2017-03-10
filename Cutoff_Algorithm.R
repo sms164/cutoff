@@ -90,7 +90,7 @@ library("sn")
 #[IC1]  fitloops
 #-----------------------------------------------
 
-#Runs loops of mixture model over different numbers of components and the normal and skew-normal distribution. This function accepts a data frame of the data and identifiers (variables must be entitled data and id respectively). This is the longest function to run and may fail, but can be re-run with adjustments using various options based on the error message output when the function fails. The default values are to do both skewnormal and normal approximation, with up to 5 components and 10 loops per combination of distribution and number of components. It is not reccommended to change these unless the default function fails.
+#Runs loops of mixture model over different numbers of components and the normal and skew-normal distribution. This function accepts a data frame of the data and identifiers (variables must be entitled data and id respectively). This is the longest function to run and may fail, but can be re-run with adjustments using various options based on the error message output when the function fails. The default values are to do both skew-normal and normal approximation, with up to 5 components and 10 loops per combination of distribution and number of components. It is not reccommended to change these unless the default function fails.
 #accepts a dataframe with columns id and data
 fitloops<-function(datawithids,loops=10,maxcp=5){
   dists="Both"
@@ -115,13 +115,13 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       norms$ms[[i]][[j]]<-vector("list", 15)
       if (dists=="Both") {
         norms$mc[[i]][[j]]<-loopErr(data,i,j,"Normal")  
-        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew.normal")
+        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew-normal")
       } else if (dists=="Normal"){ 
         norms$mc[[i]][[j]]<-loopErr(data,i,j,"Normal")
-      } else if (dists=="Skew.normal"){
-        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew.normal")
+      } else if (dists=="Skew-normal"){
+        norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew-normal")
       } else {
-        stop(print("dists must be specified as 'Both' or 'Normal' or 'Skew.normal'"))
+        stop(print("dists must be specified as 'Both' or 'Normal' or 'Skew-normal'"))
       }
       
       message(paste(i, "Component(s), Loop", j))
@@ -138,7 +138,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       if (dists=="Normal"){ 
         norms$ms[[i]][[j]]<-vector("list")
         norms$ms[[i]][[j]]$bic<-NA
-      } else if (dists=="Skew.normal"){
+      } else if (dists=="Skew-normal"){
         norms$mc[[i]][[j]]<-vector("list")
         norms$mc[[i]][[j]]$bic<-NA
       }
@@ -165,7 +165,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       } else {
         nobj$lmin$mc[i]<-1
       }
-      if (dists=="Both" | dists=="Skew.normal"){
+      if (dists=="Both" | dists=="Skew-normal"){
         nobj$lmin$ms[i]<-which.min(nobj$ms[i,])
       } else {
         nobj$lmin$ms[i]<-1
@@ -188,10 +188,10 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     if (which.max(errors)<=maxcp){
       dist<-"Normal"
     } else {
-      dist<-"Skew.normal"
+      dist<-"Skew-normal"
     }
     if (ic<=2){
-      stop(paste("More than two loops of the mixture modeling algorithm failed for the", dist, "distribution with", ic, "component(s). First ensure that the necessary packages have been loaded correctly. If the packages are loaded correctly, check for extreme outliers (which may be dropped with extreme caution) or violations of skewnormal or normal distribution assumptions."))
+      stop(paste("More than two loops of the mixture modeling algorithm failed for the", dist, "distribution with", ic, "component(s). First ensure that the necessary packages have been loaded correctly. If the packages are loaded correctly, check for extreme outliers (which may be dropped with extreme caution) or violations of skew-normal or normal distribution assumptions."))
     } else {
       stop(paste("More than two loops of the mixture modeling algorithm failed for the", dist, "distribution with", ic, "component(s). Consider choosing a lower number of components (the default is 5) via the maxcp option of the fitloops function."))
     }
@@ -252,8 +252,8 @@ bestfits<-function(fitres){
     nobj$distp="Normal"
     nobj$distf="Normal"
   } else if (nobj$dist=="sn") {
-    nobj$distp="Skew normal"
-    nobj$distf="Skew.normal"
+    nobj$distp="Skew-normal"
+    nobj$distf="Skew-normal"
   } else {
     nobj$distp=""
   }
@@ -272,9 +272,9 @@ bestfits<-function(fitres){
     componentnames[i]<-paste(i, " Component(s):  ", sep="")  
   }    
   rownames(model$bictab)<-componentnames
-  colnames(model$bictab)<-c("Normal", "Skew normal")
-  model$summary<-data.frame(desc=c(paste(nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components ", sep=" "), paste("Skew normal with", nobj$minind$sn, "components ", sep=" "), paste("Normal with", nobj$minind$no, "components ", sep=" "), "Skew normal with 2 components ", "Normal with 2 components "), bic=c(nobj$best$bic, nobj$sn[nobj$minind$sn], nobj$no[nobj$minind$no], nobj$sn[2], nobj$no[2]))
-  rownames(model$summary)<-c("Best Overall", "Best Skew normal  ", "Best Normal", "Two Skew normal", "Two Normal")
+  colnames(model$bictab)<-c("Normal", "Skew-normal")
+  model$summary<-data.frame(desc=c(paste(nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components ", sep=" "), paste("Skew-normal with", nobj$minind$sn, "components ", sep=" "), paste("Normal with", nobj$minind$no, "components ", sep=" "), "Skew-normal with 2 components ", "Normal with 2 components "), bic=c(nobj$best$bic, nobj$sn[nobj$minind$sn], nobj$no[nobj$minind$no], nobj$sn[2], nobj$no[2]))
+  rownames(model$summary)<-c("Best Overall", "Best Skew-normal  ", "Best Normal", "Two Skew-normal", "Two Normal")
   colnames(model$summary)<-c("Description         ", "BIC  ")
   
   
@@ -303,14 +303,14 @@ bicgraph<-function(model,title="BIC by type and number of distributions",setcolo
   color<-setcolor
   if (is.na(model$bictab$Normal[1])==F) {
     plot(model$bictab$Normal, pch=1, col=color[1], main=title, xlab="Number of distributions", ylab="BIC", type="o",  xaxt="n")
-    lines(model$bictab$`Skew normal`, type="o", pch=2, lty=2, col=color[2])
+    lines(model$bictab$`Skew-normal`, type="o", pch=2, lty=2, col=color[2])
   } else {
     plot(model$bictab$Normal, type="o", pch=2, lty=2, col=color[2], main=title, xlab="Number of distributions", ylab="BIC",  xaxt="n")
-    lines(model$bictab$`Skew normal`, pch=1, col=color[1], type="o")    
+    lines(model$bictab$`Skew-normal`, pch=1, col=color[1], type="o")    
   }  
   points(model$bestdesc$ncomp,model$best$bic,type="o", pch="O", col=color[3],cex=2)
   axis(1, at = seq(1, length(model$bictab$Normal), by = 1))
-  suppressWarnings(legend("topright", col=c(color[1], color[2], color[3]), lty=c(1,2,0), pch = c(1, 2, 1), legend=c("Normal", "Skew normal", "Best by BIC"), cex=c(1,1,1), xjust=1, seg.len=3, title="Distribution"))
+  suppressWarnings(legend("topright", col=c(color[1], color[2], color[3]), lty=c(1,2,0), pch = c(1, 2, 1), legend=c("Normal", "Skew-normal", "Best by BIC"), cex=c(1,1,1), xjust=1, seg.len=3, title="Distribution"))
   
 }
 
@@ -332,9 +332,9 @@ fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
   
   data=fitres$datawithids$data
   n=ncomp
-  if (dist!="Normal" & dist!="Skew.normal") {
-    stop("Distribution must be specified as either 'Normal' or 'Skew.normal'")
-  } else if ((dist=="Normal" & is.na(fitres$no[[1]]$bic)==T)| (dist=="Skew.normal" & is.na(fitres$sn[[1]]$bic)==T) | ncomp>length(fitres$no) ){
+  if (dist!="Normal" & dist!="Skew-normal") {
+    stop("Distribution must be specified as either 'Normal' or 'Skew-normal'")
+  } else if ((dist=="Normal" & is.na(fitres$no[[1]]$bic)==T)| (dist=="Skew-normal" & is.na(fitres$sn[[1]]$bic)==T) | ncomp>length(fitres$no) ){
     stop("Must choose a distribution and number of components that were fitted in the fitloops function")
   } else {
     if (dist=="Normal"){
@@ -346,7 +346,7 @@ fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
     if (dist=="no"){
       distp="Normal"
     } else if (dist=="sn") {
-      distp="Skew Normal"
+      distp="Skew-Normal"
     } else {
       distp=""
     }
@@ -1427,7 +1427,7 @@ bicgraph(model=bestfitsobject)
 #
 #              fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
 #
-#                 dist: either "Normal" or "Skew.normal"
+#                 dist: either "Normal" or "Skew-normal"
 #                 ncomp: number from 1 to 5
 #-----------------------------------------------
 fitpickobject<-fitpick(fitres=fitloopsobject,bestfits=bestfitsobject)
