@@ -299,15 +299,15 @@ bestfits<-function(fitres){
 #-----------------------------------------------
 #Plots BIC to show which combination of distributions and number of components is optimal by BIC. BIC is a criterion which should be minimized (ie we are looking for the most negative value), and a decrease in BIC of 10 or more is "strong evidence" that the model with lower BIC is superior. However in some cases you may want to choose a different distribution and this graph allows for an easy compairison of relative BIC.
 
-bicgraph<-function(model,title="BIC by type and number of distributions",setcolor=c("magenta", "blue", "black")){
+bicgraph<-function(model,title="BIC by type and number of components",setcolor=c("magenta", "blue", "black")){
   color<-setcolor
   buffer<-(max(model$bictab)-min(model$bictab))/20
   ylim<-c(min(model$bictab)-buffer, max(model$bictab)+buffer)
   if (is.na(model$bictab$Normal[1])==F) {
-    plot(model$bictab$Normal, pch=1, col=color[1], main=title, xlab="Number of distributions", ylab="BIC", type="o",  xaxt="n", ylim=ylim)
+    plot(model$bictab$Normal, pch=1, col=color[1], main=title, xlab="Number of components", ylab="BIC", type="o",  xaxt="n", ylim=ylim)
     lines(model$bictab$`Skew-normal`, type="o", pch=2, lty=2, col=color[2])
   } else {
-    plot(model$bictab$Normal, type="o", pch=2, lty=2, col=color[2], main=title, xlab="Number of distributions", ylab="BIC",  xaxt="n", ylim=ylim)
+    plot(model$bictab$Normal, type="o", pch=2, lty=2, col=color[2], main=title, xlab="Number of components", ylab="BIC",  xaxt="n", ylim=ylim)
     lines(model$bictab$`Skew-normal`, pch=1, col=color[1], type="o")    
   }  
   points(model$bestdesc$ncomp,model$best$bic,type="o", pch="O", col=color[3],cex=2)
@@ -973,6 +973,7 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppressleg
   "black"            #9
 )){
   color=setcolor
+  grobj<-vector("list")
   
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
     plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=paste("Uncertainty Plot of", cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " "),type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty")

@@ -21,9 +21,16 @@ opts_chunk$set(message=FALSE, echo = F,
 opts_knit$set(root.dir = "/Users/sarahsullivan/Google Drive/Sarah Sullivan/Code")
 ```
 
-```{r loadfunctions, echo=F, warning=F, message=F}
-library(mixsmsn)
-library(sn)
+```{r loadfunctions, echo=F}
+
+#-----------------------------------------------
+#[IB] Load Packages
+#-----------------------------------------------
+
+library("mixsmsn")
+library("sn")
+
+
 #-----------------------------------------------
 #[IC] Load Functions
 #-----------------------------------------------
@@ -32,7 +39,7 @@ library(sn)
 #[IC1]  fitloops
 #-----------------------------------------------
 
-#Runs loops of mixture model over different numbers of components and the normal and skew-normal distribution. This function accepts a data frame of the data and identifiers (variables must be entitled data and id respectively). This is the longest function to run and may fail, but can be re-run with adjustments using various options based on the error message output when the function fails. The default values are to do both skewnormal and normal approximation, with up to 5 components and 10 loops per combination of distribution and number of components. It is not reccommended to change these unless the default function fails.
+#Runs loops of mixture model over different numbers of components and the normal and skew-normal distribution. This function accepts a data frame of the data and identifiers (variables must be entitled data and id respectively). This is the longest function to run and may fail, but can be re-run with adjustments using various options based on the error message output when the function fails. The default values are to do both skew-normal and normal approximation, with up to 5 components and 10 loops per combination of distribution and number of components. It is not reccommended to change these unless the default function fails.
 #accepts a dataframe with columns id and data
 fitloops<-function(datawithids,loops=10,maxcp=5){
   dists="Both"
@@ -63,7 +70,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       } else if (dists=="Skew.normal"){
         norms$ms[[i]][[j]]<-loopErr(data,i,j,"Skew.normal")
       } else {
-        stop(print("dists must be specified as 'Both' or 'Normal' or 'Skew.normal'"))
+        stop(print("dists must be specified as 'Both' or 'Normal' or 'Skew-normal'"))
       }
       
       message(paste(i, "Component(s), Loop", j))
@@ -133,9 +140,9 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       dist<-"Skew.normal"
     }
     if (ic<=2){
-      stop(paste("More than two loops of the mixture modeling algorithm failed for the", dist, "distribution with", ic, "component(s). First ensure that the necessary packages have been loaded correctly. If the packages are loaded correctly, check for extreme outliers (which may be dropped with extreme caution) or violations of skewnormal or normal distribution assumptions."))
+      stop(paste("More than two loops of the mixture modeling algorithm failed to converge for the", dist, "distribution with", ic, "component(s). First ensure that the necessary packages have been loaded correctly. If the packages are loaded correctly, check for extreme outliers (which may be dropped with extreme caution) or violations of skew-normal or normal distribution assumptions."))
     } else {
-      stop(paste("More than two loops of the mixture modeling algorithm failed for the", dist, "distribution with", ic, "component(s). Consider choosing a lower number of components (the default is 5) via the maxcp option of the fitloops function."))
+      stop(paste("More than two loops of the mixture modeling algorithm failed to converge for the", dist, "distribution with", ic, "component(s). Consider choosing a lower number of components (the default is 5) via the maxcp option of the fitloops function."))
     }
   }  
 }
@@ -194,8 +201,8 @@ bestfits<-function(fitres){
     nobj$distp="Normal"
     nobj$distf="Normal"
   } else if (nobj$dist=="sn") {
-    nobj$distp="Skew normal"
-    nobj$distf="Skew.normal"
+    nobj$distp="Skew-normal"
+    nobj$distf="Skew-normal"
   } else {
     nobj$distp=""
   }
@@ -214,9 +221,9 @@ bestfits<-function(fitres){
     componentnames[i]<-paste(i, " Component(s):  ", sep="")  
   }    
   rownames(model$bictab)<-componentnames
-  colnames(model$bictab)<-c("Normal", "Skew normal")
-  model$summary<-data.frame(desc=c(paste(nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components ", sep=" "), paste("Skew normal with", nobj$minind$sn, "components ", sep=" "), paste("Normal with", nobj$minind$no, "components ", sep=" "), "Skew normal with 2 components ", "Normal with 2 components "), bic=c(nobj$best$bic, nobj$sn[nobj$minind$sn], nobj$no[nobj$minind$no], nobj$sn[2], nobj$no[2]))
-  rownames(model$summary)<-c("Best Overall", "Best Skew normal  ", "Best Normal", "Two Skew normal", "Two Normal")
+  colnames(model$bictab)<-c("Normal", "Skew-normal")
+  model$summary<-data.frame(desc=c(paste(nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components ", sep=" "), paste("Skew-normal with", nobj$minind$sn, "components ", sep=" "), paste("Normal with", nobj$minind$no, "components ", sep=" "), "Skew-normal with 2 components ", "Normal with 2 components "), bic=c(nobj$best$bic, nobj$sn[nobj$minind$sn], nobj$no[nobj$minind$no], nobj$sn[2], nobj$no[2]))
+  rownames(model$summary)<-c("Best Overall", "Best Skew-normal  ", "Best Normal", "Two Skew-normal", "Two Normal")
   colnames(model$summary)<-c("Description         ", "BIC  ")
   
   
@@ -241,18 +248,20 @@ bestfits<-function(fitres){
 #-----------------------------------------------
 #Plots BIC to show which combination of distributions and number of components is optimal by BIC. BIC is a criterion which should be minimized (ie we are looking for the most negative value), and a decrease in BIC of 10 or more is "strong evidence" that the model with lower BIC is superior. However in some cases you may want to choose a different distribution and this graph allows for an easy compairison of relative BIC.
 
-bicgraph<-function(model,title="BIC by type and number of distributions",setcolor=c("magenta", "blue", "black")){
+bicgraph<-function(model,title="BIC by type and number of components",setcolor=c("magenta", "blue", "black")){
   color<-setcolor
+  buffer<-(max(model$bictab)-min(model$bictab))/20
+  ylim<-c(min(model$bictab)-buffer, max(model$bictab)+buffer)
   if (is.na(model$bictab$Normal[1])==F) {
-    plot(model$bictab$Normal, pch=1, col=color[1], main=title, xlab="Number of distributions", ylab="BIC", type="o",  xaxt="n")
-    lines(model$bictab$`Skew normal`, type="o", pch=2, lty=2, col=color[2])
+    plot(model$bictab$Normal, pch=1, col=color[1], main=title, xlab="Number of components", ylab="BIC", type="o",  xaxt="n", ylim=ylim)
+    lines(model$bictab$`Skew-normal`, type="o", pch=2, lty=2, col=color[2])
   } else {
-    plot(model$bictab$Normal, type="o", pch=2, lty=2, col=color[2], main=title, xlab="Number of distributions", ylab="BIC",  xaxt="n")
-    lines(model$bictab$`Skew normal`, pch=1, col=color[1], type="o")    
+    plot(model$bictab$Normal, type="o", pch=2, lty=2, col=color[2], main=title, xlab="Number of components", ylab="BIC",  xaxt="n", ylim=ylim)
+    lines(model$bictab$`Skew-normal`, pch=1, col=color[1], type="o")    
   }  
   points(model$bestdesc$ncomp,model$best$bic,type="o", pch="O", col=color[3],cex=2)
   axis(1, at = seq(1, length(model$bictab$Normal), by = 1))
-  suppressWarnings(legend("topright", col=c(color[1], color[2], color[3]), lty=c(1,2,0), pch = c(1, 2, 1), legend=c("Normal", "Skew normal", "Best by BIC"), cex=c(1,1,1), xjust=1, seg.len=3, title="Distribution"))
+  suppressWarnings(legend("topright", col=c(color[1], color[2], color[3]), lty=c(1,2,0), pch = c(1, 2, 1), legend=c("Normal", "Skew-normal", "Best by BIC"), cex=c(1,1,1), xjust=1, seg.len=3, title="Distribution"))
   
 }
 
@@ -274,9 +283,9 @@ fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
   
   data=fitres$datawithids$data
   n=ncomp
-  if (dist!="Normal" & dist!="Skew.normal") {
-    stop("Distribution must be specified as either 'Normal' or 'Skew.normal'")
-  } else if ((dist=="Normal" & is.na(fitres$no[[1]]$bic)==T)| (dist=="Skew.normal" & is.na(fitres$sn[[1]]$bic)==T) | ncomp>length(fitres$no) ){
+  if (dist!="Normal" & dist!="Skew-normal") {
+    stop("Distribution must be specified as either 'Normal' or 'Skew-normal'")
+  } else if ((dist=="Normal" & is.na(fitres$no[[1]]$bic)==T)| (dist=="Skew-normal" & is.na(fitres$sn[[1]]$bic)==T) | ncomp>length(fitres$no) ){
     stop("Must choose a distribution and number of components that were fitted in the fitloops function")
   } else {
     if (dist=="Normal"){
@@ -288,7 +297,7 @@ fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
     if (dist=="no"){
       distp="Normal"
     } else if (dist=="sn") {
-      distp="Skew Normal"
+      distp="Skew-Normal"
     } else {
       distp=""
     }
@@ -1299,105 +1308,84 @@ twobestdorest<-function(fitloopsobj,bestfit){
   return(model)
   
 }
-
 ```
 
 
-```{r example1}
+#Example 1
+```{r example1, echo=T}
 
-examp1<-read.csv(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex1.csv")
+examp1<-read.csv(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex1.csv", colClasses=c("NULL", NA, NA))
 
 hist(examp1$data, breaks=100, main="Histogram of Data")
-dens<-density(examp1$data)
-plot(dens, main="Density of Data")
-
-fitloopsobject<-fitloops(datawithids=examp1)
-bestfitsobject<-bestfits(fitres=fitloopsobject)
-bicgraph(model=bestfitsobject)
-
-fitpickobject<-fitpick(fitres=fitloopsobject,bestfits=bestfitsobject)
-
-uncertobject<-uncert(fitpickobj=fitpickobject)
-multcutobject<-multcut(uncertobj=uncertobject)
-
-rawuncertgraph(uncertobj=uncertobject,multcutobj=multcutobject)
-rawdistgraph(pickobj=fitpickobject)
-rawhistcuts(uncertobj=uncertobject,multcutobj=multcutobject)
-
-standindetobject<-standindet(uncertobj=uncertobject,multcutobj=multcutobject,cutcomp=1)
-specindetobject<-specindet(uncertobj=uncertobject,multcutobj=multcutobject,cutcomp=1,certlevel=0.8)
-
-cutuncertgraph(cutobj=standindetobject)
-cutdistgraph(cutobj=standindetobject, pickobj=fitpickobject)
-cutuncertgraph(cutobj=specindetobject)
-cutdistgraph(cutobj=specindetobject, pickobj=fitpickobject)
-outdataobject<-outputdata(standindet=standindetobject,specindet=specindetobject)
-summaryobject<-summarytable(outdataobj=outdataobject, standindetobj=standindetobject, specindetobj=specindetobject)
-outtable<-summaryobject$outtab
-outtable
-
-```
-
-```{r example2}
-
-examp2<-read.csv(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex2.csv", colClasses=c("NULL", NA, NA))
-
-hist(examp2$data, breaks=100, main="Histogram of Data")
-dens<-density(examp2$data)
-plot(dens, main="Density of Data")
+dens1<-density(examp1$data)
+plot(dens1, main="Density of Data")
 
 #fitloopsobject<-fitloops(datawithids=examp2)
-  #might not run due to 5 component solution not being easily optimized, if it doesn't run, either load the full file, or run fitloopsobject<-fitloops(datawithids=examp2,maxcp=4): 
-load(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex2fitloops")
-fitloopsobject<-ex2
+  #might not run due to 5 component solution not being easily optimized, if it doesn't run either load the full file, or run fitloopsobject<-fitloops(datawithids=examp2,maxcp=4): 
+load(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex1fitloops")
 
-bestfitsobject<-bestfits(fitres=fitloopsobject)
-bicgraph(model=bestfitsobject)
+fitloopsobject1<-ex1
 
-fitpickobject<-fitpick(fitres=fitloopsobject,bestfits=bestfitsobject)
+bestfitsobject1<-bestfits(fitres=fitloopsobject1)
+bicgraph(model=bestfitsobject1)
 
-uncertobject<-uncert(fitpickobj=fitpickobject)
-multcutobject<-multcut(uncertobj=uncertobject)
+fitpickobject1<-fitpick(fitres=fitloopsobject1,bestfits=bestfitsobject1)
 
-rawuncertgraph(uncertobj=uncertobject,multcutobj=multcutobject)
-rawdistgraph(pickobj=fitpickobject)
-rawhistcuts(uncertobj=uncertobject,multcutobj=multcutobject)
+uncertobject1<-uncert(fitpickobj=fitpickobject1)
+multcutobject1<-multcut(uncertobj=uncertobject1)
+
+rawuncertgraph(uncertobj=uncertobject1,multcutobj=multcutobject1)
+rawdistgraph(pickobj=fitpickobject1)
+rawhistcuts(uncertobj=uncertobject1,multcutobj=multcutobject1)
 
 
-standindetobject<-standindet(uncertobj=uncertobject,multcutobj=multcutobject,cutcomp=1)
-specindetobject<-specindet(uncertobj=uncertobject,multcutobj=multcutobject,cutcomp=1,certlevel=0.8)
+standindetobject1<-standindet(uncertobj=uncertobject1,multcutobj=multcutobject1,cutcomp=1)
+specindetobject1<-specindet(uncertobj=uncertobject1,multcutobj=multcutobject1,cutcomp=1,certlevel=0.8)
 
-cutuncertgraph(cutobj=standindetobject)
-cutdistgraph(cutobj=standindetobject, pickobj=fitpickobject)
-cutuncertgraph(cutobj=specindetobject)
-cutdistgraph(cutobj=specindetobject, pickobj=fitpickobject)
-outdataobject<-outputdata(standindet=standindetobject,specindet=specindetobject)
-summaryobject<-summarytable(outdataobj=outdataobject, standindetobj=standindetobject, specindetobj=specindetobject)
-outtable<-summaryobject$outtab
-outtable
+cutuncertgraph(cutobj=standindetobject1)
+cutdistgraph(cutobj=standindetobject1, pickobj=fitpickobject1)
+cutuncertgraph(cutobj=specindetobject1)
+cutdistgraph(cutobj=specindetobject1, pickobj=fitpickobject1)
+outdataobject1<-outputdata(standindet=standindetobject1,specindet=specindetobject1)
+summaryobject1<-summarytable(outdataobj=outdataobject1, standindetobj=standindetobject1, specindetobj=specindetobject1)
+outtable1<-summaryobject1$outtab
+outtable1
 
 ```
 
-```{r while loop, echo=F}
+#Example 2
 
-stop<-F
-iter<-0
-comp<-0
+```{r example2, echo=T}
 
-  loopErr = function(data) {
-    tryCatch(smsn.mix(data, nu =3, g = 5, get.init = TRUE, criteria = TRUE, group = TRUE, family = "Normal", calc.im=FALSE, obs.prob=TRUE, iter.max=5000, kmeans.param=list(iter.max = 100, n.start = 50)),
-             error = function(e) {message(paste("Error in iteration", iter, sep=" ")); 
-               NA}) 
-  }
-  
-#fit5<-list()
-#while (stop==F){
-#  iter<-iter+1
-#  set.seed(iter*10000+iter^2+iter)    
-#  fit5[iter]<- loopErr(examp2$data)
-#  if (is.na(fit5[iter])==F){
-#    stop<-T
-#  }
-#}
+examp2<-read.csv(file="/Users/sarahsullivan/Documents/SullivanDocs/Rwd/cutoff/ex2.csv")
+
+hist(examp2$data, breaks=100, main="Histogram of Data")
+dens2<-density(examp2$data)
+plot(dens2, main="Density of Data")
+
+fitloopsobject2<-fitloops(datawithids=examp2)
+bestfitsobject2<-bestfits(fitres=fitloopsobject2)
+bicgraph(model=bestfitsobject2)
+
+fitpickobject2<-fitpick(fitres=fitloopsobject2,bestfits=bestfitsobject2)
+
+uncertobject2<-uncert(fitpickobj=fitpickobject2)
+multcutobject2<-multcut(uncertobj=uncertobject2)
+
+rawuncertgraph(uncertobj=uncertobject2,multcutobj=multcutobject2)
+rawdistgraph(pickobj=fitpickobject2)
+rawhistcuts(uncertobj=uncertobject2,multcutobj=multcutobject2)
+
+standindetobject2<-standindet(uncertobj=uncertobject2,multcutobj=multcutobject2,cutcomp=1)
+specindetobject2<-specindet(uncertobj=uncertobject2,multcutobj=multcutobject2,cutcomp=1,certlevel=0.8)
+
+cutuncertgraph(cutobj=standindetobject2, xlim=c(min(examp2$data),3))
+cutdistgraph(cutobj=standindetobject2, pickobj=fitpickobject2, xlim=c(min(examp2$data),3))
+cutuncertgraph(cutobj=specindetobject2, xlim=c(min(examp2$data),3))
+cutdistgraph(cutobj=specindetobject2, pickobj=fitpickobject2, xlim=c(min(examp2$data),3))
+outdataobject2<-outputdata(standindet=standindetobject2,specindet=specindetobject2)
+summaryobject2<-summarytable(outdataobj=outdataobject2, standindetobj=standindetobject2, specindetobj=specindetobject2)
+outtable2<-summaryobject2$outtab
+outtable2
 
 ```
