@@ -100,7 +100,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
   norms<-vector("list")
   errors<-matrix(0, nrow=maxcp, ncol=2)
   loopErr = function(data,i,j,family) {
-    tryCatch(smsn.mix(data, nu =3, g = i, get.init = TRUE, criteria = TRUE, group = TRUE, family = family, calc.im=FALSE, obs.prob=TRUE, iter.max=5000, kmeans.param=list(iter.max = 50, n.start = 5)),
+    tryCatch(suppressWarnings(smsn.mix(data, nu =3, g = i, get.init = TRUE, criteria = TRUE, group = TRUE, family = family, calc.im=FALSE, obs.prob=TRUE, iter.max=5000, kmeans.param=list(iter.max = 50, n.start = 5))),
              error = function(e) {message(paste("Error in loop", j, "of", family, "with", i, "components", sep=" ")); 
                NA}) 
   }
@@ -179,10 +179,6 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       fitres$no[[i]]<-norms$mc[[i]][[nobj$lmin$mc[i]]]
       fitres$sn[[i]]<-norms$ms[[i]][[nobj$lmin$ms[i]]]
     }
-    fitres$loops<-loops
-    fitres$maxcp<-maxcp
-    fitres$datawithids<-datawithids
-    fitres$errors<-errors
   
     nobj<-vector("list")
     
@@ -235,6 +231,13 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     }
     
     model<-vector("list")
+    
+    model$loops<-loops
+    model$maxcp<-maxcp
+    model$datawithids<-datawithids
+    model$errors<-errors
+    model$fitres<-fitres
+    
     model$sn2<-fitres$sn[[2]]
     model$snbest<-fitres$sn[[nobj$minind$sn[1]]]
     model$norm2<-fitres$no[[2]]
@@ -253,10 +256,9 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     rownames(model$summary)<-c("Best Overall", "Best Skew-normal  ", "Best Normal", "Two Skew-normal", "Two Normal")
     colnames(model$summary)<-c("Description         ", "BIC  ")
     
-    
     model$bestdesc<-list(ncomp=nobj$minind[nobj$dist][1,1], dist=nobj$distf)
-    model$datawithids<-fitres$datawithids
     
+    print("")
     print(paste ("The best model by BIC is", nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components", sep = " "))
     print("")
     print("Bayesian Information Criterion (BIC) Matrix")
@@ -265,6 +267,8 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     print("Below is a table of the BIC's of the most common distribution and number of component combinations to base a cutpoint on")
     print(model$summary)
   
+  return(model)
+    
   } else {
     if (which.max(errors)<=maxcp){
       dist<-"Normal"
@@ -276,7 +280,8 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     } else {
       stop(paste("More than two loops of the mixture modeling algorithm failed to converge for the", dist, "distribution with", ic, "component(s). Consider choosing a lower number of components (the default is 5) via the maxcp option of the fitloops function."))
     }
-  }  
+  }
+
 }
   
 
