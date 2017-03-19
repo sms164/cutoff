@@ -183,7 +183,88 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     fitres$maxcp<-maxcp
     fitres$datawithids<-datawithids
     fitres$errors<-errors
-    return(fitres)
+  
+    nobj<-vector("list")
+    
+    for (i in 1:maxcp){
+      for (j in 1:loops){
+        nobj$no[i]<-fitres$no[[i]]$bic
+        nobj$sn[i]<-fitres$sn[[i]]$bic
+      }
+    }
+    
+    nobj$minind<-data.frame(no=as.numeric(c(NA)), sn=as.numeric(c(NA)))
+    
+    
+    
+    if (is.na(nobj$no[1])==T){
+      nobj$minind$no<-1
+    } else {
+      nobj$minind$no <- (which.min(nobj$no))
+    }
+    
+    if (is.na(nobj$sn[1])==T){
+      nobj$minind$sn<-1
+    } else {
+      nobj$minind$sn <- (which.min(nobj$sn))
+    }
+    
+    nobj$min<-data.frame(type=c("no", "sn"), bic=as.numeric(c(NA, NA)))
+    
+    
+    nobj$min$type<-as.character(c("no", "sn"))
+    type<-c("no", "sn")
+    nobj$min$type<-type
+    
+    nobj$min[1,2]<-fitres$no[[nobj$minind$no[1]]]$bic
+    nobj$min[2,2]<-fitres$sn[[nobj$minind$sn[1]]]$bic
+    
+    nobj$distnum<-which.min(nobj$min$bic)
+    nobj$dist<-nobj$min$type[nobj$distnum]
+    
+    nobj$best<-fitres[[nobj$dist]][[nobj$minind[nobj$dist][1,1]]]
+    
+    if (nobj$dist=="no"){
+      nobj$distp="Normal"
+      nobj$distf="Normal"
+    } else if (nobj$dist=="sn") {
+      nobj$distp="Skew-normal"
+      nobj$distf="Skew-normal"
+    } else {
+      nobj$distp=""
+    }
+    
+    model<-vector("list")
+    model$sn2<-fitres$sn[[2]]
+    model$snbest<-fitres$sn[[nobj$minind$sn[1]]]
+    model$norm2<-fitres$no[[2]]
+    model$normbest<-fitres$no[[nobj$minind$no[1]]]
+    model$best<-nobj$best
+    model$bictab<-data.frame(normal=c(NA)[rep(c(1), times=maxcp)], skew.normal=c(NA)[rep(c(1), times=maxcp)])
+    model$bictab$normal<-nobj$no
+    model$bictab$skew.normal<-nobj$sn
+    componentnames<-vector()
+    for (i in 1:maxcp){
+      componentnames[i]<-paste(i, " Component(s):  ", sep="")  
+    }    
+    rownames(model$bictab)<-componentnames
+    colnames(model$bictab)<-c("Normal", "Skew-normal")
+    model$summary<-data.frame(desc=c(paste(nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components ", sep=" "), paste("Skew-normal with", nobj$minind$sn, "components ", sep=" "), paste("Normal with", nobj$minind$no, "components ", sep=" "), "Skew-normal with 2 components ", "Normal with 2 components "), bic=c(nobj$best$bic, nobj$sn[nobj$minind$sn], nobj$no[nobj$minind$no], nobj$sn[2], nobj$no[2]))
+    rownames(model$summary)<-c("Best Overall", "Best Skew-normal  ", "Best Normal", "Two Skew-normal", "Two Normal")
+    colnames(model$summary)<-c("Description         ", "BIC  ")
+    
+    
+    model$bestdesc<-list(ncomp=nobj$minind[nobj$dist][1,1], dist=nobj$distf)
+    model$datawithids<-fitres$datawithids
+    
+    print(paste ("The best model by BIC is", nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components", sep = " "))
+    print("")
+    print("Bayesian Information Criterion (BIC) Matrix")
+    print("BIC should be minimized and a difference of 10 BIC indicates strong evidence that the model with lower BIC is superior")
+    print(model$bictab)
+    print("Below is a table of the BIC's of the most common distribution and number of component combinations to base a cutpoint on")
+    print(model$summary)
+  
   } else {
     if (which.max(errors)<=maxcp){
       dist<-"Normal"
@@ -197,102 +278,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
     }
   }  
 }
-
-
-#-----------------------------------------------
-#[IC2]  bestfits
-#-----------------------------------------------
-#Determines the optimal number of distributions and type of distributions (as determined by BIC), was well as the other indicated functions. Also creates table of BICs which can be fed into the bicgraph function to visualize which combination of distributions and component numbers is optimal by BIC.
-
-bestfits<-function(fitres){
   
-  maxcp<-fitres$maxcp
-  loops<-fitres$loops
-  nobj<-vector("list")
-  
-  for (i in 1:maxcp){
-    for (j in 1:loops){
-      nobj$no[i]<-fitres$no[[i]]$bic
-      nobj$sn[i]<-fitres$sn[[i]]$bic
-    }
-  }
-  
-  nobj$minind<-data.frame(no=as.numeric(c(NA)), sn=as.numeric(c(NA)))
-  
-  
-  
-  if (is.na(nobj$no[1])==T){
-    nobj$minind$no<-1
-  } else {
-    nobj$minind$no <- (which.min(nobj$no))
-  }
-  
-  if (is.na(nobj$sn[1])==T){
-    nobj$minind$sn<-1
-  } else {
-    nobj$minind$sn <- (which.min(nobj$sn))
-  }
-  
-  nobj$min<-data.frame(type=c("no", "sn"), bic=as.numeric(c(NA, NA)))
-  
-  
-  nobj$min$type<-as.character(c("no", "sn"))
-  type<-c("no", "sn")
-  nobj$min$type<-type
-  
-  nobj$min[1,2]<-fitres$no[[nobj$minind$no[1]]]$bic
-  nobj$min[2,2]<-fitres$sn[[nobj$minind$sn[1]]]$bic
-  
-  nobj$distnum<-which.min(nobj$min$bic)
-  nobj$dist<-nobj$min$type[nobj$distnum]
-  
-  nobj$best<-fitres[[nobj$dist]][[nobj$minind[nobj$dist][1,1]]]
-  
-  if (nobj$dist=="no"){
-    nobj$distp="Normal"
-    nobj$distf="Normal"
-  } else if (nobj$dist=="sn") {
-    nobj$distp="Skew-normal"
-    nobj$distf="Skew-normal"
-  } else {
-    nobj$distp=""
-  }
-  
-  model<-vector("list")
-  model$sn2<-fitres$sn[[2]]
-  model$snbest<-fitres$sn[[nobj$minind$sn[1]]]
-  model$norm2<-fitres$no[[2]]
-  model$normbest<-fitres$no[[nobj$minind$no[1]]]
-  model$best<-nobj$best
-  model$bictab<-data.frame(normal=c(NA)[rep(c(1), times=maxcp)], skew.normal=c(NA)[rep(c(1), times=maxcp)])
-  model$bictab$normal<-nobj$no
-  model$bictab$skew.normal<-nobj$sn
-  componentnames<-vector()
-  for (i in 1:maxcp){
-    componentnames[i]<-paste(i, " Component(s):  ", sep="")  
-  }    
-  rownames(model$bictab)<-componentnames
-  colnames(model$bictab)<-c("Normal", "Skew-normal")
-  model$summary<-data.frame(desc=c(paste(nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components ", sep=" "), paste("Skew-normal with", nobj$minind$sn, "components ", sep=" "), paste("Normal with", nobj$minind$no, "components ", sep=" "), "Skew-normal with 2 components ", "Normal with 2 components "), bic=c(nobj$best$bic, nobj$sn[nobj$minind$sn], nobj$no[nobj$minind$no], nobj$sn[2], nobj$no[2]))
-  rownames(model$summary)<-c("Best Overall", "Best Skew-normal  ", "Best Normal", "Two Skew-normal", "Two Normal")
-  colnames(model$summary)<-c("Description         ", "BIC  ")
-  
-  
-  model$bestdesc<-list(ncomp=nobj$minind[nobj$dist][1,1], dist=nobj$distf)
-  model$datawithids<-fitres$datawithids
-  
-  print(paste ("The best model by BIC is", nobj$distp, "with", nobj$minind[nobj$dist][1,1], "components", sep = " "))
-  print("")
-  print("Bayesian Information Criterion (BIC) Matrix")
-  print("BIC should be minimized and a difference of 10 BIC indicates strong evidence that the model with lower BIC is superior")
-  print(model$bictab)
-  print("Below is a table of the BIC's of the most common distribution and number of component combinations to base a cutpoint on")
-  print(model$summary)
-  
-  return(model)
-  
-}
-
 
 #-----------------------------------------------
 #[IC3]  bicgraph
