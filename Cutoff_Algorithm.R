@@ -787,7 +787,7 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
 #-----------------------------------------------
 #[IC10] standindet
 #-----------------------------------------------
-#After deciding which distribution to cut after, this function provides cutpoint and standard indeterminate ranges (90 and 95), as well as classification into negative, indeterminate and positive components. It should be noted that the function is written so that it will still run if a lower or upper bound is not found, in which case all subjects below the upper bound (if lower bound not found) or above the lower bound (if upper bound not found) will be classified as indeterminate. In this case it is reccommeded that the non-standard cuts function be used to find a more descriptive indeterminate range.
+#After deciding which distribution to cut after, this function provides cutpoint and standard indeterminate ranges (80 and 90), as well as classification into negative, indeterminate and positive components. It should be noted that the function is written so that it will still run if a lower or upper bound is not found, in which case all subjects below the upper bound (if lower bound not found) or above the lower bound (if upper bound not found) will be classified as indeterminate. In this case it is reccommeded that the non-standard cuts function be used to find a more descriptive indeterminate range.
 standindet<-function(uncertobj,multcutobj,cutcomp=0){
   data<-uncertobj$datawithids$data
   n=uncertobj$desc$ncomp
@@ -824,47 +824,47 @@ standindet<-function(uncertobj,multcutobj,cutcomp=0){
   cutpoint<-multcutobj$cutpoint[cutcomp]  
   minunclb<-closest(uncertdf,min(data)+0.0001,cutpoint,0.0001)
   minuncub<-closest(uncertdf,cutpoint,max(data),0)
+  lb80<-crosses(uncertdf,minunclb,cutpoint,0.2)  
+  ub80<-crosses(uncertdf,cutpoint,minuncub,0.2)
   lb90<-crosses(uncertdf,minunclb,cutpoint,0.1)  
   ub90<-crosses(uncertdf,cutpoint,minuncub,0.1)
-  lb95<-crosses(uncertdf,minunclb,cutpoint,0.05)  
-  ub95<-crosses(uncertdf,cutpoint,minuncub,0.05)
   
+  bound80<-c(lb80, ub80)
   bound90<-c(lb90, ub90)
-  bound95<-c(lb95, ub95)
   
+  if (is.na(lb80)==T){
+    message("Lower bound of the 80% indeterminate range not found because uncertainty is never below 10% to the left of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+  }
+  if (is.na(ub80)==T){
+    message("Upper bound of the 80% indeterminate range not found because uncertainty is never below 10% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+  }
   if (is.na(lb90)==T){
-    message("Lower bound of the 90% indeterminate range not found because uncertainty is never below 10% to the left of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+    message("Lower bound of the 90% indeterminate range not found because uncertainty is never below 5% to the left of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
   }
   if (is.na(ub90)==T){
-    message("Upper bound of the 90% indeterminate range not found because uncertainty is never below 10% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
-  }
-  if (is.na(lb95)==T){
-    message("Lower bound of the 95% indeterminate range not found because uncertainty is never below 5% to the left of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
-  }
-  if (is.na(ub95)==T){
-    message("Upper bound of the 95% indeterminate range not found because uncertainty is never below 5% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+    message("Upper bound of the 90% indeterminate range not found because uncertainty is never below 5% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
   }
   
   class<-data.frame(id=uncertobj$datawithids$id, data=uncertobj$datawithids$data)
   class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
-  class$group95<-"indeterminate"
-  class$group95[class$data<=bound95[1]]<-"negative"
-  class$group95[class$data>=bound95[2]]<-"positive"
   class$group90<-"indeterminate"
   class$group90[class$data<=bound90[1]]<-"negative"
   class$group90[class$data>=bound90[2]]<-"positive"
+  class$group80<-"indeterminate"
+  class$group80[class$data<=bound80[1]]<-"negative"
+  class$group80[class$data>=bound80[2]]<-"positive"
   
   class$groupdi<-as.factor(class$groupdi)
-  class$group95<-as.factor(class$group95)
   class$group90<-as.factor(class$group90)
+  class$group80<-as.factor(class$group80)
   
+  class$group80 = factor(class$group80,levels(class$group80)[c(2,3,1)])
   class$group90 = factor(class$group90,levels(class$group90)[c(2,3,1)])
-  class$group95 = factor(class$group95,levels(class$group95)[c(2,3,1)])
   
   cutobj<-vector("list")
   cutobj$cutpoint<-cutpoint
+  cutobj$bound80<-bound80
   cutobj$bound90<-bound90
-  cutobj$bound95<-bound95
   cutobj$class<-class
   cutobj$uncertdf<-uncertdf
   cutobj$type<-"Standard"
@@ -897,7 +897,7 @@ specindet<-function(uncertobj,multcutobj,certlevel,cutcomp=0){
     stop("Component to cut after must be specified. For example if you wanted to cut between components 2 and 3, set cutcomp=2")
   }
   if (certlevel>=1 | certlevel<0.5){
-    stop("Certainty level must be between 0.5 and 1, for example if you wanted a certainty level of 90% set certlevel=0.90")
+    stop("Certainty level must be between 0.5 and 1, for example if you wanted a certainty level of 80% set certlevel=0.80")
   }
   
   uncertdf<-multcutobj$uncertdf[[cutcomp]]
@@ -985,18 +985,18 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppressleg
   
   abline(v =cutobj$cutpoint, untf = T, col=color[6], lwd=1)
   if (cutobj$type=="Standard") {
-    abline(h =0.05, untf = T, col=color[4], lwd=1, lty=2)
-    abline(h =0.1, untf = T, col=color[2], lwd=1, lty=2)
-    abline(v =cutobj$bound90, untf = T, col=color[2], lwd=1)
-    abline(v =cutobj$bound95, untf = T, col=color[4], lwd=1)
+    abline(h =0.1, untf = T, col=color[4], lwd=1, lty=2)
+    abline(h =0.2, untf = T, col=color[2], lwd=1, lty=2)
+    abline(v =cutobj$bound80, untf = T, col=color[2], lwd=1)
+    abline(v =cutobj$bound90, untf = T, col=color[4], lwd=1)
     legtxt<-c("Uncertainty",
               paste("Cutpoint=", round(cutobj$cutpoint, 2), sep =""), 
+              "Uncertainty=0.20",
+              "Indeterminate Range with", 
+              paste("80% Certainty: (", round(cutobj$bound80[1], 2), " , ", round(cutobj$bound80[2], 2), ")", sep =""),
               "Uncertainty=0.10",
               "Indeterminate Range with", 
-              paste("90% Certainty: (", round(cutobj$bound90[1], 2), " , ", round(cutobj$bound90[2], 2), ")", sep =""),
-              "Uncertainty=0.05",
-              "Indeterminate Range with", 
-              paste("95% Certainty: (", round(cutobj$bound95[1], 2), " , ", round(cutobj$bound95[2], 2), ")", sep ="")
+              paste("90% Certainty: (", round(cutobj$bound90[1], 2), " , ", round(cutobj$bound90[2], 2), ")", sep ="")
     )
     if (suppresslegend==F){
       legend("topright", col=c(color[9], color[6], color[2], color[2], "white", color[4], color[4], "white"), lwd=1, lty=c(1,1,2,1,1,2,1,1),legend=legtxt, xjust=1, seg.len=1, title="Uncertainties, Cutpoint, and Boundaries")
@@ -1093,17 +1093,17 @@ cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbr
   lines(grobj$t, grobj$gt[[length(grobj$gt)]], lwd=2, col=grobj$colors[length(grobj$colors)], lty=2)
   abline(v =cutobj$cutpoint, untf = T, col=color[6], lwd=1)
   if (cutobj$type=="Standard") {
-    abline(v =cutobj$bound90, untf = T, col=color[2], lwd=1)
-    abline(v =cutobj$bound95, untf = T, col=color[4], lwd=1)
+    abline(v =cutobj$bound80, untf = T, col=color[2], lwd=1)
+    abline(v =cutobj$bound90, untf = T, col=color[4], lwd=1)
     if (suppresslegend==F) {
       legtxt<-c("Negative Distribution",
                 "Positive Distribution",
                 "Overall Distribution",
                 paste("Cutpoint=", round(cutobj$cutpoint, 2), sep =""), 
                 "Indeterminate Range with", 
-                paste("90% Certainty: (", round(cutobj$bound90[1], 2), " , ", round(cutobj$bound90[2], 2), ")", sep =""),
+                paste("80% Certainty: (", round(cutobj$bound80[1], 2), " , ", round(cutobj$bound80[2], 2), ")", sep =""),
                 "Indeterminate Range with", 
-                paste("95% Certainty: (", round(cutobj$bound95[1], 2), " , ", round(cutobj$bound95[2], 2), ")", sep ="")
+                paste("90% Certainty: (", round(cutobj$bound90[1], 2), " , ", round(cutobj$bound90[2], 2), ")", sep ="")
       )
       legend("topright", col=c(color[1], color[5], color[9], color[6], color[2], "white", color[4], "white"), lwd=c(2,2,2,1,1,1,1,1), legend=legtxt, xjust=1, seg.len=3, title="Distributions, Cutpoint, and Boundaries", lty=c(1,1,2,1,1,1,1,1))
     }
@@ -1138,7 +1138,7 @@ outputdata<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
     } else if (is.null(specindetobj)==T){
       dataout<-standindetobj$class
     } else {
-      datastand<-standindetobj$class[c("id", "group90", "group95")]
+      datastand<-standindetobj$class[c("id", "group80", "group90")]
       names(specindetobj$class)<-c(names(specindetobj$class[1:3]),paste('group', (100*specindetobj$desc$uncertlevel), sep=''))
       datanonst<-specindetobj$class
       dataout<-merge(datanonst,datastand,by.x="id", by.y="id")
@@ -1153,7 +1153,7 @@ outputdata<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
 #-----------------------------------------------
 #[IC15]  summarytable
 #-----------------------------------------------
-#Creates table which summarizes the results of the cutting functions, yeilding the cutpoint, indeterminate ranges, counts and percentages for the dichotomous cut, 90 and 95 indeterminate ranges and (if desired) one non-standard uncertainty level.
+#Creates table which summarizes the results of the cutting functions, yeilding the cutpoint, indeterminate ranges, counts and percentages for the dichotomous cut, 80 and 90 indeterminate ranges and (if desired) one non-standard uncertainty level.
 summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
   comptable <- function(table){
     dftable<-as.data.frame(table)
@@ -1218,12 +1218,12 @@ summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
   } 
   
   if (ncol(outdataobj)!=4 ){ 
+    grps80<-table(outdataobj$group80)
+    grps80<-comptable(grps80)
+    grps$group80<-grps80$Freq
     grps90<-table(outdataobj$group90)
     grps90<-comptable(grps90)
     grps$group90<-grps90$Freq
-    grps95<-table(outdataobj$group95)
-    grps95<-comptable(grps95)
-    grps$group95<-grps95$Freq
   } 
   
   names(grps)
@@ -1242,7 +1242,7 @@ summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
     ppos<-vector("numeric")
   }
   
-  vars<-c("groupdi", "group90", "group95", "group80")
+  vars<-c("groupdi", "group80", "group90", "group80")
   
   grpname<-vector("numeric")
   for (i in 1:(ncol(grps)-2)){
@@ -1261,9 +1261,9 @@ summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
   if (ncol(grps)==4){
     grpname<-c("Raw Cutoff", paste("Cutoff with ", specindetobj$desc$uncertlevel*100, "% Certainty", sep=""))
   } else if (ncol(grps)==5) {
-    grpname<-c("Raw Cutoff", "Cutoff with 90% Certainty", "Cutoff with 95% Certainty")
+    grpname<-c("Raw Cutoff", "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
   } else if (ncol(grps)==6) {
-    grpname<-c("Raw Cutoff", paste("Cutoff with ", specindetobj$desc$uncertlevel*100, "% Certainty", sep=""), "Cutoff with 90% Certainty", "Cutoff with 95% Certainty")
+    grpname<-c("Raw Cutoff", paste("Cutoff with ", specindetobj$desc$uncertlevel*100, "% Certainty", sep=""), "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
   }
   
   classtab<-data.frame(nneg, nind, npos, dneg, dind, dpos)
@@ -1281,12 +1281,12 @@ summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
     model$cutpoint<-standindetobj$cutpoint     
     model$desc<-standindetobj$desc
     model$bounds<-vector("list")
+    model$bounds$bound80<-standindetobj$bound80
     model$bounds$bound90<-standindetobj$bound90
-    model$bounds$bound95<-standindetobj$bound95
   }
   if (is.null(standindetobj)==F & is.null(specindetobj)==F){
+    model$bounds$bound80<-standindetobj$bound80
     model$bounds$bound90<-standindetobj$bound90
-    model$bounds$bound95<-standindetobj$bound95
   }
   model$classtab<-classtab
   model$outtab<-outtab
@@ -1297,8 +1297,8 @@ summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
   if (is.null(specindetobj)==F) {
     message(paste(specindetobj$desc$uncertlevel*100, "% Certainty Range: (", round(specindetobj$bound[1], 3), ", ", round(specindetobj$bound[2], 3), ")", sep=""))
   }
+  message(paste("80% Certainty Range: (", round(standindetobj$bound80[1], 3), ", ", round(standindetobj$bound80[2], 3), ")", sep=""))
   message(paste("90% Certainty Range: (", round(standindetobj$bound90[1], 3), ", ", round(standindetobj$bound90[2], 3), ")", sep=""))
-  message(paste("95% Certainty Range: (", round(standindetobj$bound95[1], 3), ", ", round(standindetobj$bound95[2], 3), ")", sep=""))
   
   return(model)
 }

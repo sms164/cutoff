@@ -1340,7 +1340,7 @@ rawhistcuts(uncertobj=uncertobject1,multcutobj=multcutobject1)
 
 
 standindetobject1<-standindet(uncertobj=uncertobject1,multcutobj=multcutobject1,cutcomp=1)
-specindetobject1<-specindet(uncertobj=uncertobject1,multcutobj=multcutobject1,cutcomp=1,certlevel=0.8)
+specindetobject1<-specindet(uncertobj=uncertobject1,multcutobj=multcutobject1,cutcomp=1,certlevel=0.95)
 
 cutuncertgraph(cutobj=standindetobject1)
 cutdistgraph(cutobj=standindetobject1, pickobj=fitpickobject1)
