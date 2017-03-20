@@ -307,301 +307,10 @@ bicgraph<-function(model,title="BIC by type and number of components",setcolor=c
   
 }
 
-
-
 #-----------------------------------------------
-#[IC3]  cutfn
+#[IC3]  cutpick
 #-----------------------------------------------
-
-cutfn<-function(fitresobj,dist="",ncomp=NA){
-  #Selects a specific distribution and format so that it can be read into the uncertainty functions. Default picks the optimized BIC function from bestfits, but this can be adjusted if the user chooses otherwise.
-  fitpick<-function(fitres,dist="",ncomp=NA){
-    if (dist=="" & is.na(ncomp)==T) {
-      dist=bestfits$bestdesc$dist
-      ncomp=bestfits$bestdesc$ncomp
-    }
-    if (ncomp==1) {
-      stop("Single component specified so there is no cut-point")
-    }
-    
-    data=fitres$datawithids$data
-    n=ncomp
-    if (dist!="Normal" & dist!="Skew-normal") {
-      stop("Distribution must be specified as either 'Normal' or 'Skew-normal'")
-    } else if ((dist=="Normal" & is.na(fitres$no[[1]]$bic)==T)| (dist=="Skew-normal" & is.na(fitres$sn[[1]]$bic)==T) | ncomp>length(fitres$no) ){
-      stop("Must choose a distribution and number of components that were fitted in the fitloops function")
-    } else {
-      if (dist=="Normal"){
-        dist="no"
-      } else {
-        dist="sn"
-      }
-      
-      if (dist=="no"){
-        distp="Normal"
-      } else if (dist=="sn") {
-        distp="Skew-Normal"
-      } else {
-        distp=""
-      }
-      
-      singlefit<-vector("list")
-      singlefit<-fitres[[dist]][[ncomp]]  
-      
-      comp<-data.frame(ogroup=singlefit$group, data=data)
-      comp$index <- as.numeric(row.names(comp))
-      comp <- comp[order(comp$data),] 
-      comp$diff<-c(0, diff(comp$ogroup))
-      nl=as.numeric(dim(comp)[1])
-      
-      #Will recode the distributions so that they are in order with 1 being the lowest
-      comp$c<-vector(mode="numeric", length=nl)
-      comp$c[1]<-1
-      for (i in 2:nl){
-        if (comp$diff[i]==0) {
-          comp$c[i]=comp$c[i-1]
-        } else {
-          comp$c[i]=comp$c[i-1]+1
-        }
-      }
-      comp <- comp[order(comp$index),]
-      singlefit$group2<-comp$c
-      comp <- comp[order(comp$data),] 
-      
-      intDistErr = function() {
-        tryCatch(data.frame(c=unique(comp$c), o=unique(comp$ogroup)),
-                 error = function(e) {data.frame(c=c(NA)[rep(c(1), times=length(comp$c))], o=c(NA)[rep(c(1), times=length(comp$c))])}) 
-      }
-      
-      cross<-intDistErr()
-      if (suppressWarnings(is.na(cross[1,1])==T)){
-        stop("This combination of distribution and number of components yeilds interrupting distributions, which make determining a cut-point impossible. Please choose a different combination of distribution and number of components")
-      }
-      
-      for (i in 1:n){
-        singlefit$mu[i]<-fitres[[dist]][[ncomp]]$mu[cross$o[i]]
-        singlefit$sigma2[i]<-fitres[[dist]][[ncomp]]$sigma2[cross$o[i]]
-        singlefit$shape[i]<-fitres[[dist]][[ncomp]]$shape[cross$o[i]]
-        singlefit$pii[i]<-fitres[[dist]][[ncomp]]$pii[cross$o[i]]
-        singlefit$mu[i]<-fitres[[dist]][[ncomp]]$mu[cross$o[i]]
-      }
-      
-      singlefit$obs.prob<-NULL
-      
-      #Detect if there are any interupting distributions (can also be recoded to kick someone out and tell them to pick something else:
-      if (max(comp$c)>max(comp$ogroup)) {
-        print("Warning: there is at least one interupting distribution, which may make the determination of a cutoff and the calculation of an indeterminate range difficult in later functions. If later functions fail, try a different combination of distribution and number of components (ideally the next most optimal by BIC).")
-      }
-      
-      par<-vector("list")
-      par<-data.frame(mean=c(NA)[rep(c(1), times=n)], sd=c(NA)[rep(c(1), times=n)], shape=c(NA)[rep(c(1), times=n)], pii=c(NA)[rep(c(1), times=n)])
-      for (i in 1:n){
-        par$mean[i]=singlefit$mu[i]
-        par$sd[i]=sqrt(singlefit$sigma2[i])
-        par$sigma2[i]=singlefit$sigma2[i]
-        par$shape[i]=singlefit$shape[i]
-        par$pii[i]=singlefit$pii[i]
-      }
-      
-      parameters<-vector("list")
-      parameters$singlefit<-singlefit
-      parameters$par<-par
-      parameters$datawithids<-fitres$datawithids
-      parameters$desc<-vector("list")
-      parameters$desc$ncomp<-ncomp
-      parameters$desc$dist<-distp
-    }
-    
-    return(parameters)
-  }
-  
-  #Performs uncertainty calculations.
-  uncert<-function(fitpickobj){
-    
-    data<-fitpickobj$datawithids$data
-    par<-fitpickobj$par
-    fit<-fitpickobj$singlefit
-    n=fitpickobj$desc$ncomp
-    #Create Uncertainties
-    v<-c(seq(min(data),max(data),0.0001)) 
-    
-    nl<-length(v)
-    PD<-vector(mode="numeric", length=n)
-    PD[1]<-1
-    g1<-0
-    g2<-0
-    Pv.D<-matrix(0, nl, n)
-    Pv.DPD<-matrix(0, nl, n)
-    PDT<-matrix(0, nl, 1)
-    PD.v<-matrix(0, nl, n)
-    for (i in 2:n) {
-      PD[i]<-par$pii[i]
-      PD[1]<-PD[1]-PD[i]
-    }
-    for (i in 1:n){
-      if (fitpickobj$desc$dist=="Normal"){
-        Pv.D[,i]<-dnorm(v,mean=par$mean[i], sd=par$sd[i])
-      } else {
-        Pv.D[,i]<-dsn(v,xi=par$mean[i],omega=par$sd[i],alpha=par$shape[i])
-      }
-    }
-    for (i in 1:n){
-      for (j in 1:nl){
-        Pv.DPD[j,i]<-Pv.D[j,i]*PD[i]
-      }
-    }
-    PDT<-rowSums (Pv.DPD)
-    for (i in 1:n){
-      for (j in 1:nl){
-        PD.v[j,i] <- Pv.DPD[j,i] / (PDT[j])
-      }
-    }
-    
-    mcluncert<-1-apply(PD.v, 1, max) 
-    uncertmat<-PD.v
-    restrmat<-cbind(PD.v, v)
-    uncertout<-vector("list")
-    uncertout$uncertmat<-uncertmat
-    uncertout$mcluncert<-mcluncert
-    uncertout$restrmat<-restrmat
-    uncertout$singlefit<-fit
-    uncertout$v<-v
-    uncertout$datawithids<-fitpickobj$datawithids
-    uncertout$desc<-fitpickobj$desc
-    return(uncertout) 
-  }
-  
-  #Calculates raw percentages and counts positive and negative for all possible cut points between distributions
-  multcut<-function(uncertobj){
-    
-    PD.v<-uncertobj$uncertmat
-    data<-uncertobj$datawithids$data
-    n=uncertobj$desc$ncomp
-    ncomp=n
-    closest<-function(uncertdf,min,max,level){
-      uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
-      diff.cut<-abs(uncertdf2$uncertainty.v - level)
-      min.diffc<-min(diff.cut)
-      y<-which(min.diffc==diff.cut)
-      #take first one
-      z<-min(y)
-      cut<-uncertdf2$v[z]  
-      return(cut) 
-    }
-    g1<-vector("list")
-    g2<-vector("list")
-    uncertdf<-vector("list")
-    uncertainty.v<-vector("list")
-    cutpoint<-c(0)[rep(c(1), times=ncomp-1)]
-    for (j in 1:(ncomp-1)){
-      g1[[j]]<-0
-      g2[[j]]<-0
-      for (i in 1:j){
-        g1[[j]]<-g1[[j]]+PD.v[,i]
-      }
-      for (i in (j+1):n){
-        g2[[j]]<-g2[[j]]+PD.v[,i]
-      }
-      uncertainty.v[[j]]<-1-pmax(g1[[j]], g2[[j]])
-    }
-    
-    for (j in 1:(ncomp-1)){
-      uncertdf[[j]]<-data.frame(v=uncertobj$v, uncertainty.v=uncertainty.v[[j]])
-      cutpoint[j]<-closest(uncertdf[[j]],min(data),max(data),1.0)
-    }
-    class2<-vector("list")
-    for (j in 1:(ncomp-1)){
-      class2[[j]]<-ifelse(data>=cutpoint[j], "positive", "negative")
-    }
-    class<- data.frame(matrix(unlist(class2), nrow=uncertobj$singlefit$n, byrow=F),stringsAsFactors=TRUE)
-    class$data<-data
-    
-    table<-vector("list", ncomp-1)
-    for (i in 1:(ncomp-1)){
-      table[[i]]<-table(class2[[i]])
-      
-    }
-    npos<-vector("numeric")
-    nneg<-vector("numeric")
-    dpos<-vector("numeric")
-    dneg<-vector("numeric")
-    ppos<-vector("numeric")
-    pneg<-vector("numeric")
-    grpname<-vector("numeric")
-    for (i in 1:(ncomp-1)){
-      npos[i]<-table[[i]][2]
-      nneg[i]<-table[[i]][1]
-      dpos[i]<-npos[i]/(npos[i]+nneg[i])
-      dneg[i]<-1-dpos[i]
-      ppos[i]<-paste(round(100*dpos[i], 2), "%", sep="")
-      pneg[i]<-paste(round(100*dneg[i], 2), "%", sep="")
-      grpname[i]<-paste("Cut between components ", i, " and ", i+1, sep="")
-    }
-    classtab<-data.frame( nneg, npos, dneg, dpos)
-    outtab<-data.frame(nneg, npos, pneg, ppos)
-    rownames(outtab) <- grpname
-    colnames(outtab) <-c("Number Negative", "Number Positive", "Percent Negative", "Percent Positive")
-    
-    
-    
-    cutobj<-vector("list")
-    cutobj$cutpoint<-cutpoint
-    cutobj$class<-class
-    cutobj$uncertdf<-uncertdf
-    cutobj$type<-"Standard"
-    cutobj$g1<-g1
-    cutobj$g2<-g2
-    cutobj$classtab<-classtab
-    cutobj$outtab<-outtab
-    cutobj$cutnames<-grpname
-    #    cutobj$uncertmat<-uncertobj$uncertmat
-    #    cutobj$mcluncert<-uncertobj$mcluncert
-    #    cutobj$restrmat<-uncertobj$restrmat
-    #    cutobj$singlefit<-uncertobj$fit
-    #    cutobj$data<-uncertobj$data
-    #    cutobj$desc<-uncertobj$desc
-    print(outtab)  
-    
-    return(cutobj)
-  }
-  
-  fitpickobject<-fitpick(fitres=fitresobj,dist=dist,ncomp=ncomp)
-  uncertainobj<-uncert(fitpickobject)
-  multcutobj<-multcut(uncertainobj)
-    
-  cutobj<-list("")
-  
-  cutobj$modelfit<-fitpickobject$singlefit
-  cutobj$par<-fitpickobject$par
-  cutobj$datawithids<-fitpickobject$fitres$datawithids
-  cutobj$desc<-vector("list")
-  cutobjdesc$ncomp<-fitpickobject$ncomp
-  cutobj$desc$dist<-fitpickobject$distp
-  
-  cutobj$uncertmat<-uncertainobj$uncertmat
-  cutobj$mcluncert<-uncertainobj$mcluncert
-  cutobj$restrmat<-uncertainobj$restrmat
-  cutobj$v<-uncertainobj$v
-
-  cutobj$cutpoint<-multcutobj$cutpoint
-  cutobj$class<-multcutobj$class
-  cutobj$uncertdf<-multcutobj$uncertdf
-  cutobj$type<-"Standard"
-  cutobj$g1<-multcutobj$g1
-  cutobj$g2<-multcutobj$g2
-  cutobj$classtab<-multcutobj$classtab
-  cutobj$outtab<-multcutobj$outtab
-  cutobj$cutnames<-multcutobj$grpname
-  
-  return()
-  
-}
-
-
-#-----------------------------------------------
-#[IC4]  fitpick
-#-----------------------------------------------
-#Selects a specific distribution and format so that it can be read into the uncertainty functions. Default picks the optimized BIC function from bestfits, but this can be adjusted if the user chooses otherwise.
+#Selects a specific distribution and format so that it can be read into the uncertainty functions. Default picks the optimized BIC function from bestfits, but this can be adjusted if the user chooses otherwise. The function also performs uncertainty calculations and calculates raw percentages and counts positive and negative for all possible cut points between distributions
 
 cutpick<-function(fitres, dist="", ncomp=NA){
   #fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
@@ -691,30 +400,12 @@ cutpick<-function(fitres, dist="", ncomp=NA){
       par$shape[i]=singlefit$shape[i]
       par$pii[i]=singlefit$pii[i]
     }
-    
-    parameters<-vector("list")
-    parameters$singlefit<-singlefit
-    parameters$par<-par
-    parameters$datawithids<-fitres$datawithids
-    parameters$desc<-vector("list")
-    parameters$desc$ncomp<-ncomp
-    parameters$desc$dist<-distp
   }
-  
-  return(parameters)
-}
 
-#-----------------------------------------------
-#[IC5]  uncert
-#-----------------------------------------------
-#Performs uncertainty calculations.
-
-uncert<-function(fitpickobj){
-  
-  data<-fitpickobj$datawithids$data
-  par<-fitpickobj$par
-  fit<-fitpickobj$singlefit
-  n=fitpickobj$desc$ncomp
+  #Performs uncertainty calculations.
+  #uncert<-function(fitpickobj){
+    
+  fit<-singlefit
   #Create Uncertainties
   v<-c(seq(min(data),max(data),0.0001)) 
   
@@ -732,7 +423,7 @@ uncert<-function(fitpickobj){
     PD[1]<-PD[1]-PD[i]
   }
   for (i in 1:n){
-    if (fitpickobj$desc$dist=="Normal"){
+    if (dist=="Normal"){
       Pv.D[,i]<-dnorm(v,mean=par$mean[i], sd=par$sd[i])
     } else {
       Pv.D[,i]<-dsn(v,xi=par$mean[i],omega=par$sd[i],alpha=par$shape[i])
@@ -754,26 +445,9 @@ uncert<-function(fitpickobj){
   uncertmat<-PD.v
   restrmat<-cbind(PD.v, v)
   uncertout<-vector("list")
-  uncertout$uncertmat<-uncertmat
-  uncertout$mcluncert<-mcluncert
-  uncertout$restrmat<-restrmat
-  uncertout$singlefit<-fit
-  uncertout$v<-v
-  uncertout$datawithids<-fitpickobj$datawithids
-  uncertout$desc<-fitpickobj$desc
-  return(uncertout) 
-}
 
-#-----------------------------------------------
-#[IC6]  multcut
-#-----------------------------------------------
-#Calculates raw percentages and counts positive and negative for all possible cut points between distributions
-multcut<-function(uncertobj){
+  #multcut<-function(uncertobj){
   
-  PD.v<-uncertobj$uncertmat
-  data<-uncertobj$datawithids$data
-  n=uncertobj$desc$ncomp
-  ncomp=n
   closest<-function(uncertdf,min,max,level){
     uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
     diff.cut<-abs(uncertdf2$uncertainty.v - level)
@@ -802,14 +476,14 @@ multcut<-function(uncertobj){
   }
   
   for (j in 1:(ncomp-1)){
-    uncertdf[[j]]<-data.frame(v=uncertobj$v, uncertainty.v=uncertainty.v[[j]])
+    uncertdf[[j]]<-data.frame(v, uncertainty.v=uncertainty.v[[j]])
     cutpoint[j]<-closest(uncertdf[[j]],min(data),max(data),1.0)
   }
   class2<-vector("list")
   for (j in 1:(ncomp-1)){
     class2[[j]]<-ifelse(data>=cutpoint[j], "positive", "negative")
   }
-  class<- data.frame(matrix(unlist(class2), nrow=uncertobj$singlefit$n, byrow=F),stringsAsFactors=TRUE)
+  class<- data.frame(matrix(unlist(class2), nrow=singlefit$n, byrow=F),stringsAsFactors=TRUE)
   class$data<-data
   
   table<-vector("list", ncomp-1)
@@ -838,9 +512,20 @@ multcut<-function(uncertobj){
   rownames(outtab) <- grpname
   colnames(outtab) <-c("Number Negative", "Number Positive", "Percent Negative", "Percent Positive")
   
-  
-  
   cutobj<-vector("list")
+  
+  cutobj$singlefit<-singlefit
+  cutobj$par<-par
+  cutobj$datawithids<-fitres$datawithids
+  cutobj$desc<-vector("list")
+  cutobj$desc$ncomp<-ncomp
+  cutobj$desc$dist<-distp
+  
+  cutobj$uncertmat<-uncertmat
+  cutobj$mcluncert<-mcluncert
+  cutobj$restrmat<-restrmat
+  cutobj$v<-v
+  
   cutobj$cutpoint<-cutpoint
   cutobj$class<-class
   cutobj$uncertdf<-uncertdf
@@ -850,12 +535,7 @@ multcut<-function(uncertobj){
   cutobj$classtab<-classtab
   cutobj$outtab<-outtab
   cutobj$cutnames<-grpname
-  #    cutobj$uncertmat<-uncertobj$uncertmat
-  #    cutobj$mcluncert<-uncertobj$mcluncert
-  #    cutobj$restrmat<-uncertobj$restrmat
-  #    cutobj$singlefit<-uncertobj$fit
-  #    cutobj$data<-uncertobj$data
-  #    cutobj$desc<-uncertobj$desc
+
   print(outtab)  
   
   return(cutobj)
