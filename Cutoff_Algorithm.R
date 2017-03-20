@@ -545,7 +545,7 @@ cutpick<-function(fitres, dist="", ncomp=NA){
 #[IC7]  rawuncertgraph
 #-----------------------------------------------
 #Displays the overall uncertainty function (which is 1-max(probability of membership to component i)) with the possible cut-points overlaid. Note: Sometimes the cutpoint does not line up exactly with a peak in the uncertainty function, which looks like a flaw, but is not. In a two component setting, the cutpoint will always occur at the peak of the uncertainty but this is not always the case when there are more than two components.
-rawuncertgraph<-function(uncertobj,multcutobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
+rawuncertgraph<-function(cutpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -559,26 +559,26 @@ rawuncertgraph<-function(uncertobj,multcutobj,xlab="X Value",xlim=c(NA,NA),suppr
   
   grobj<-list()
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
-    grobj$minval<-(1/10)*trunc(10*min(uncertobj$datawithids$data)) 
-    grobj$maxval<-max(uncertobj$datawithids$data)
+    grobj$minval<-(1/10)*trunc(10*min(cutpickobj$datawithids$data)) 
+    grobj$maxval<-max(cutpickobj$datawithids$data)
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
   }
 
-  plot(uncertobj$v, uncertobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", uncertobj$desc$dist, "with", uncertobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
+  plot(cutpickobj$v, cutpickobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", cutpickobj$desc$dist, "with", cutpickobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
     
   col<-setcolor
-  ncomp<-uncertobj$desc$ncomp
-  for (i in 1:(uncertobj$desc$ncomp-1)){
-    abline(v =multcutobj$cutpoint[i], untf = T, col=col[i], lwd=2)
+  ncomp<-cutpickobj$desc$ncomp
+  for (i in 1:(cutpickobj$desc$ncomp-1)){
+    abline(v =cutpickobj$cutpoint[i], untf = T, col=col[i], lwd=2)
   }
   
   if (suppresslegend==F) {
     legtxt<-vector("character", ncomp)
     colors<-vector("character", ncomp)
     for (i in 2:ncomp){
-      legtxt[i]<-paste(multcutobj$cutnames[i-1], " , x=", round(multcutobj$cutpoint[i-1], 2), sep="")
+      legtxt[i]<-paste(cutpickobj$cutnames[i-1], " , x=", round(cutpickobj$cutpoint[i-1], 2), sep="")
       colors[i]<-col[i-1]
     }  
     legtxt[1]<-"Uncertainty"
@@ -593,7 +593,7 @@ rawuncertgraph<-function(uncertobj,multcutobj,xlab="X Value",xlim=c(NA,NA),suppr
 #[IC8]  rawdistgraph
 #-----------------------------------------------
 #Displays the distributions of all the components for the chosen combination of distribution and number of components. 
-rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
+rawdistgraph<-function(pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -685,7 +685,7 @@ rawdistgraph<-function(pickobj,multcutobj,xlim=c(NA,NA),xlab="Optical Density",s
 #-----------------------------------------------
 #Displays which component each bar of the histogram would be assigned to. 
 
-rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,setcolor=c(
+rawhistcuts<-function(cutpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -696,7 +696,7 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
   "grey",            #8
   "black"            #9
 )){
-  data<-uncertobj$datawithids$data
+  data<-cutpickobj$datawithids$data
   grobj<-list()
   
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
@@ -710,8 +710,8 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
     hist<-hist(datalim, breaks=setbreaks, plot=F)
   }
   
-  ncomp<-uncertobj$desc$ncomp
-  cuts <- cut(hist$breaks, c(-Inf,multcutobj$cutpoint,Inf))
+  ncomp<-cutpickobj$desc$ncomp
+  cuts <- cut(hist$breaks, c(-Inf,cutpickobj$cutpoint,Inf))
   
   color<-setcolor
   coloropt<-vector("list", 5)
@@ -731,7 +731,7 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
       }
     }
   }
-  plot(hist, col=colors, xlab=xlab, ylab="Density", main=paste("Classification by", uncertobj$desc$dist, "with", ncomp, "components", sep = " "), freq=F, lty="blank")
+  plot(hist, col=colors, xlab=xlab, ylab="Density", main=paste("Classification by", cutpickobj$desc$dist, "with", ncomp, "components", sep = " "), freq=F, lty="blank")
   
   if (suppresslegend==F){
     legtxt<-vector("character", ncomp)
@@ -749,15 +749,15 @@ rawhistcuts<-function(uncertobj,multcutobj,xlab="Optical Density",xlim=c(NA,NA),
 #[IC10] standindet
 #-----------------------------------------------
 #After deciding which distribution to cut after, this function provides cutpoint and standard indeterminate ranges (80 and 90), as well as classification into negative, indeterminate and positive components. It should be noted that the function is written so that it will still run if a lower or upper bound is not found, in which case all subjects below the upper bound (if lower bound not found) or above the lower bound (if upper bound not found) will be classified as indeterminate. In this case it is reccommeded that the non-standard cuts function be used to find a more descriptive indeterminate range.
-standindet<-function(uncertobj,multcutobj,cutcomp=0){
-  data<-uncertobj$datawithids$data
-  n=uncertobj$desc$ncomp
+standindet<-function(cutpickobj,cutcomp=0){
+  data<-cutpickobj$datawithids$data
+  n=cutpickobj$desc$ncomp
   if (n==2){
     cutcomp=1
   } else if (cutcomp==0) {
     stop("Component to cut after must be specified. For example if you wanted to cut between components 2 and 3, set cutcomp=2")
   }
-  uncertdf<-multcutobj$uncertdf[[cutcomp]]
+  uncertdf<-cutpickobj$uncertdf[[cutcomp]]
   closest<-function(uncertdf,min,max,level){
     uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
     diff.cut<-abs(uncertdf2$uncertainty.v - level)
@@ -782,7 +782,7 @@ standindet<-function(uncertobj,multcutobj,cutcomp=0){
     }
     return(cut)
   }
-  cutpoint<-multcutobj$cutpoint[cutcomp]  
+  cutpoint<-cutpickobj$cutpoint[cutcomp]  
   minunclb<-closest(uncertdf,min(data)+0.0001,cutpoint,0.0001)
   minuncub<-closest(uncertdf,cutpoint,max(data),0)
   lb80<-crosses(uncertdf,minunclb,cutpoint,0.2)  
@@ -806,7 +806,7 @@ standindet<-function(uncertobj,multcutobj,cutcomp=0){
     message("Upper bound of the 90% indeterminate range not found because uncertainty is never below 5% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
   }
   
-  class<-data.frame(id=uncertobj$datawithids$id, data=uncertobj$datawithids$data)
+  class<-data.frame(id=cutpickobj$datawithids$id, data=cutpickobj$datawithids$data)
   class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
   class$group90<-"indeterminate"
   class$group90[class$data<=bound90[1]]<-"negative"
@@ -829,13 +829,13 @@ standindet<-function(uncertobj,multcutobj,cutcomp=0){
   cutobj$class<-class
   cutobj$uncertdf<-uncertdf
   cutobj$type<-"Standard"
-  cutobj$uncertobj<-uncertobj$uncertmat
+  cutobj$uncertobj<-cutpickobj$uncertmat
   cutobj$density<-vector("list")
-  cutobj$density$g1<-multcutobj$g1[[cutcomp]]
-  cutobj$density$g2<-multcutobj$g2[[cutcomp]]
-  cutobj$desc<-uncertobj$desc
+  cutobj$density$g1<-cutpickobj$g1[[cutcomp]]
+  cutobj$density$g2<-cutpickobj$g2[[cutcomp]]
+  cutobj$desc<-cutpickobj$desc
   cutobj$desc$cutcomp<-cutcomp
-  cutobj$datawithids<-uncertobj$datawithids
+  cutobj$datawithids<-cutpickobj$datawithids
   
   return(cutobj) 
 }
@@ -844,13 +844,13 @@ standindet<-function(uncertobj,multcutobj,cutcomp=0){
 #[IC11]  specindet
 #-----------------------------------------------
 #Provides cutpoint and allows the user to specify a maximum tolerable uncertianty which will be used to calculate an indeterminate ranges, as well as classification into negative, indeterminate and positive components. Maximum tolerable uncertianty is 1-certainty level (ex: uncertlevel=0.05 for 95% indetermintate range since the 95% certainty means that uncertainty of classification is less than 0.05 for all samples classified as positive or negative).
-specindet<-function(uncertobj,multcutobj,certlevel,cutcomp=0){
+specindet<-function(cutpickobj,certlevel,cutcomp=0){
   uncertlevel<-1-certlevel
   uncertlevelpct<-certlevel
   
-  PD.v<-uncertobj$uncertmat
-  data<-uncertobj$datawithids$data
-  n=uncertobj$desc$ncomp
+  PD.v<-cutpickobj$uncertmat
+  data<-cutpickobj$datawithids$data
+  n=cutpickobj$desc$ncomp
   
   if (n==2){
     cutcomp=1
@@ -861,7 +861,7 @@ specindet<-function(uncertobj,multcutobj,certlevel,cutcomp=0){
     stop("Certainty level must be between 0.5 and 1, for example if you wanted a certainty level of 80% set certlevel=0.80")
   }
   
-  uncertdf<-multcutobj$uncertdf[[cutcomp]]
+  uncertdf<-cutpickobj$uncertdf[[cutcomp]]
   closest<-function(uncertdf,min,max,level){
     uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
     diff.cut<-abs(uncertdf2$uncertainty.v - level)
@@ -892,7 +892,7 @@ specindet<-function(uncertobj,multcutobj,certlevel,cutcomp=0){
   ubuns<-crosses(uncertdf,cutpoint,minuncub,uncertlevel)
   bound<-c(lbuns, ubuns)
   
-  class<-data.frame(id=uncertobj$datawithids$id, data=uncertobj$datawithids$data)
+  class<-data.frame(id=cutpickobj$datawithids$id, data=cutpickobj$datawithids$data)
   class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
   class$group<-"indeterminate"
   class$group[class$data<=bound[1]]<-"negative"
@@ -908,12 +908,12 @@ specindet<-function(uncertobj,multcutobj,certlevel,cutcomp=0){
   cutobj$class<-class
   cutobj$uncertdf<-uncertdf
   cutobj$type<-"Non.Standard"
-  cutobj$uncertobj<-uncertobj$uncertmat
-  cutobj$density<-data.frame(g1=multcutobj$g1[[cutcomp]], g2=multcutobj$g2[[cutcomp]])
-  cutobj$desc<-uncertobj$desc
+  cutobj$uncertobj<-cutpickobj$uncertmat
+  cutobj$density<-data.frame(g1=cutpickobj$g1[[cutcomp]], g2=cutpickobj$g2[[cutcomp]])
+  cutobj$desc<-cutpickobj$desc
   cutobj$desc$cutcomp<-cutcomp
   cutobj$desc$uncertlevel<-uncertlevelpct
-  cutobj$datawithids<-uncertobj$datawithids
+  cutobj$datawithids<-cutpickobj$datawithids
   
   return(cutobj) 
 }
