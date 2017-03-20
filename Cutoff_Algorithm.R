@@ -1292,7 +1292,7 @@ doallprobsfail<-function(datawithids,fitres=NA){
   summary<-summarytable(outdata5, standindetpts5, nsindet5)
   
 }
-
+ 
 #-----------------------------------------------
 #[IC17]  twobestdorest
 #-----------------------------------------------
