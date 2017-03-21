@@ -24,22 +24,15 @@
 #[IB] Load Packages
 #[IC] Load Functions
 #[IC1]  fitloops
-#[IC2]  bestfits
-#[IC3]  bicgraph
-#[IC4]  fitpick
-#[IC5]  uncert
-#[IC6]  multcut
-#[IC7]  rawuncertgraph
-#[IC8]  rawdistgraph
-#[IC9]  rawhistcuts
-#[IC10] standindet
-#[IC11] specindet
+#[IC2]  bicgraph
+#[IC3]  modelpick
+#[IC4]  rawuncertgraph
+#[IC5]  rawdistgraph
+#[IC6]  rawhistcuts
+#[IC7]  cutoff
 #[IC12] cutuncertgraph
 #[IC13] cutdistgraph
-#[IC14] outputdata
-#[IC15] summarytable
-#[IC16] doallprobsfail
-#[IC17] twobestdorest
+#[IC14] summaryout
 #-----------------------------------------------
 #[II] Load and clean data
 #[IIA] Import data 
@@ -746,12 +739,13 @@ rawhistcuts<-function(modelpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreak
 }
 
 #-----------------------------------------------
-#[IC7] cutoff
+#[IC7]  cutoff
 #-----------------------------------------------
 #After deciding which distribution to cut after, this function provides cutpoint and standard indeterminate ranges (80 and 90), as well as classification into negative, indeterminate and positive components. It should be noted that the function is written so that it will still run if a lower or upper bound is not found, in which case all subjects below the upper bound (if lower bound not found) or above the lower bound (if upper bound not found) will be classified as indeterminate. In this case it is reccommeded that the non-standard cuts function be used to find a more descriptive indeterminate range.
 cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
   data<-modelpickobj$datawithids$data
   n=modelpickobj$desc$ncomp
+  certlevel=newcertlevel
   if (n==2){
     cutcomp=1
   } else if (cutcomp==0) {
@@ -760,7 +754,7 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
   if ((certlevel>=1 & certlevel!=0) | (certlevel<0.5 & certlevel!=0)){
     stop("Certainty level must be between 0.5 and 1, for example if you wanted a certainty level of 80% set certlevel=0.80")
   }
-  if (standcert==F & newcertlevel==0){
+  if (standardcert==F & newcertlevel==0){
     stop("Neither standard nor non-standard certainty levels are requested. For standard certainty levels set standardcert=T. For non-standard certainty levels set newcertlevel to desired certainty. Both standard and nonstandard certainties can be generated in the same function call.")
   }
   uncertdf<-modelpickobj$uncertdf[[cutcomp]]
@@ -788,9 +782,14 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
     }
     return(cut)
   }
+  
   cutpoint<-modelpickobj$cutpoint[cutcomp]  
   minunclb<-closest(uncertdf,min(data)+0.0001,cutpoint,0.0001)
   minuncub<-closest(uncertdf,cutpoint,max(data),0)
+  class<-data.frame(id=modelpickobj$datawithids$id, data=modelpickobj$datawithids$data)
+  class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
+  class$groupdi<-as.factor(class$groupdi)
+
   if (standardcert==T){
     lb80<-crosses(uncertdf,minunclb,cutpoint,0.2)  
     ub80<-crosses(uncertdf,cutpoint,minuncub,0.2)
@@ -799,141 +798,82 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
     bound80<-c(lb80, ub80)
     bound90<-c(lb90, ub90)
     if (is.na(lb80)==T){
-      message("Lower bound of the 80% indeterminate range not found because uncertainty is never below 20% to the left of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+      message("Lower bound of the 80% indeterminate range not found because uncertainty is never below 20% to the left of the cutpoint. Consider adjusting the non-standard certainty option (newcertlevel) to find a more descriptive indeterminate range.")
     }
     if (is.na(ub80)==T){
-      message("Upper bound of the 80% indeterminate range not found because uncertainty is never below 20% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+      message("Upper bound of the 80% indeterminate range not found because uncertainty is never below 20% to the right of the cutpoint. Consider adjusting the non-standard certainty option (newcertlevel) to find a more descriptive indeterminate range.")
     }
     if (is.na(lb90)==T){
-      message("Lower bound of the 90% indeterminate range not found because uncertainty is never below 10% to the left of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+      message("Lower bound of the 90% indeterminate range not found because uncertainty is never below 10% to the left of the cutpoint. Consider adjusting the non-standard certainty option (newcertlevel) to find a more descriptive indeterminate range.")
     }
     if (is.na(ub90)==T){
-      message("Upper bound of the 90% indeterminate range not found because uncertainty is never below 10% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
+      message("Upper bound of the 90% indeterminate range not found because uncertainty is never below 10% to the right of the cutpoint. Consider adjusting the non-standard certainty option (newcertlevel) to find a more descriptive indeterminate range.")
     }
+    class$group90<-"indeterminate"
+    class$group90[class$data<=bound90[1]]<-"negative"
+    class$group90[class$data>=bound90[2]]<-"positive"
+    class$group80<-"indeterminate"
+    class$group80[class$data<=bound80[1]]<-"negative"
+    class$group80[class$data>=bound80[2]]<-"positive"
+    class$group90<-as.factor(class$group90)
+    class$group80<-as.factor(class$group80)
+    class$group80 = factor(class$group80,levels(class$group80)[c(2,3,1)])
+    class$group90 = factor(class$group90,levels(class$group90)[c(2,3,1)])
   }
+  
   if (newcertlevel>0){
     uncertlevel<-1-certlevel
     uncertlevelpct<-certlevel
     lbuns<-crosses(uncertdf,minunclb,cutpoint,uncertlevel)  
     ubuns<-crosses(uncertdf,cutpoint,minuncub,uncertlevel)
     bound<-c(lbuns, ubuns)
-  }
-
-  
-  class<-data.frame(id=modelpickobj$datawithids$id, data=modelpickobj$datawithids$data)
-  class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
-  class$group90<-"indeterminate"
-  class$group90[class$data<=bound90[1]]<-"negative"
-  class$group90[class$data>=bound90[2]]<-"positive"
-  class$group80<-"indeterminate"
-  class$group80[class$data<=bound80[1]]<-"negative"
-  class$group80[class$data>=bound80[2]]<-"positive"
-  
-  class$groupdi<-as.factor(class$groupdi)
-  class$group90<-as.factor(class$group90)
-  class$group80<-as.factor(class$group80)
-  
-  class$group80 = factor(class$group80,levels(class$group80)[c(2,3,1)])
-  class$group90 = factor(class$group90,levels(class$group90)[c(2,3,1)])
-  
-  cutobj<-vector("list")
-  cutobj$cutpoint<-cutpoint
-  cutobj$bound80<-bound80
-  cutobj$bound90<-bound90
-  cutobj$class<-class
-  cutobj$uncertdf<-uncertdf
-  cutobj$type<-"Standard"
-  cutobj$uncertobj<-modelpickobj$uncertmat
-  cutobj$density<-vector("list")
-  cutobj$density$g1<-modelpickobj$g1[[cutcomp]]
-  cutobj$density$g2<-modelpickobj$g2[[cutcomp]]
-  cutobj$desc<-modelpickobj$desc
-  cutobj$desc$cutcomp<-cutcomp
-  cutobj$datawithids<-modelpickobj$datawithids
-  
-  return(cutobj) 
-}
-
-#-----------------------------------------------
-#[IC11]  specindet
-#-----------------------------------------------
-#Provides cutpoint and allows the user to specify a maximum tolerable uncertianty which will be used to calculate an indeterminate ranges, as well as classification into negative, indeterminate and positive components. Maximum tolerable uncertianty is 1-certainty level (ex: uncertlevel=0.05 for 95% indetermintate range since the 95% certainty means that uncertainty of classification is less than 0.05 for all samples classified as positive or negative).
-specindet<-function(modelpickobj,certlevel,cutcomp=0){
-  uncertlevel<-1-newcertlevel
-  uncertlevelpct<-newcertlevel
-  
-  PD.v<-modelpickobj$uncertmat
-  data<-modelpickobj$datawithids$data
-  n=modelpickobj$desc$ncomp
-  
-  if (n==2){
-    cutcomp=1
-  } else if (cutcomp==0) {
-    stop("Component to cut after must be specified. For example if you wanted to cut between components 2 and 3, set cutcomp=2")
-  }
-  if (certlevel>=1 | certlevel<0.5){
-    stop("Certainty level must be between 0.5 and 1, for example if you wanted a certainty level of 80% set certlevel=0.80")
-  }
-  
-  uncertdf<-modelpickobj$uncertdf[[cutcomp]]
-  closest<-function(uncertdf,min,max,level){
-    uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
-    diff.cut<-abs(uncertdf2$uncertainty.v - level)
-    min.diffc<-min(diff.cut)
-    y<-which(min.diffc==diff.cut)
-    z<-min(y)
-    cut<-uncertdf2$v[z]  
-    return(cut) 
-  }
-  crosses<-function(uncertdf,min,max,level){
-    uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
-    diff.cut<-abs(uncertdf2$uncertainty.v - level)
-    min.diffc<-min(diff.cut)
-    if (min.diffc<=0.001){
-      y<-which(min.diffc==diff.cut)
-      #take first one
-      z<-min(y)
-      cut<-uncertdf2$v[z]  
-    } else {
-      cut<-NA
+    if (is.na(lbuns)==T){
+      message(paste("Lower bound of the ", 100*certlevel, "% indeterminate range not found because uncertainty is never below ", 100*(1-certlevel), "% to the left of the cutpoint. Consider adjusting the non-standard certainty option (newcertlevel) to find a more descriptive indeterminate range.", sep=""))
     }
-    return(cut)
+    if (is.na(ubuns)==T){
+      message(paste("Upper bound of the ", 100*certlevel, "% indeterminate range not found because uncertainty is never below ", 100*(1-certlevel), "% to the right of the cutpoint. Consider adjusting the non-standard certainty option (newcertlevel) to find a more descriptive indeterminate range.", sep=""))
+    }
+    class$group<-"indeterminate"
+    class$group[class$data<=bound[1]]<-"negative"
+    class$group[class$data>=bound[2]]<-"positive"
+    class$group<-as.factor(class$group)
+    class$group = factor(class$group,levels(class$group)[c(2,3,1)])
   }
-  cutpoint<-closest(uncertdf,min(data),max(data),0.5)
-  minunclb<-closest(uncertdf,min(data)+0.0001,cutpoint,0.0001)
-  minuncub<-closest(uncertdf,cutpoint,max(data),0)
-  lbuns<-crosses(uncertdf,minunclb,cutpoint,uncertlevel)  
-  ubuns<-crosses(uncertdf,cutpoint,minuncub,uncertlevel)
-  bound<-c(lbuns, ubuns)
-  
-  class<-data.frame(id=modelpickobj$datawithids$id, data=modelpickobj$datawithids$data)
-  class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
-  class$group<-"indeterminate"
-  class$group[class$data<=bound[1]]<-"negative"
-  class$group[class$data>=bound[2]]<-"positive"
-  
-  class$groupdi<-as.factor(class$groupdi)
-  class$group<-as.factor(class$group)
-  class$group = factor(class$group,levels(class$group)[c(2,3,1)])
   
   cutobj<-vector("list")
   cutobj$cutpoint<-cutpoint
-  cutobj$bound<-bound
+  cutobj$bound80<-c(NA,NA)
+  cutobj$bound90<-c(NA,NA)
+  cutobj$bound<-c(NA,NA)
   cutobj$class<-class
   cutobj$uncertdf<-uncertdf
-  cutobj$type<-"Non.Standard"
+  
+  if (standardcert==T & newcertlevel==0){
+    cutobj$type<-"Standard"
+    cutobj$bound80<-bound80
+    cutobj$bound90<-bound90
+  } else if (standardcert==F & newcertlevel>0) {
+    cutobj$type<-"Non.Standard"
+    cutobj$bound<-bound
+  } else {
+    cutobj$type<-"Standard.and.Non"
+    cutobj$bound80<-bound80
+    cutobj$bound90<-bound90
+    cutobj$bound<-bound
+  }
+
   cutobj$uncertobj<-modelpickobj$uncertmat
   cutobj$density<-data.frame(g1=modelpickobj$g1[[cutcomp]], g2=modelpickobj$g2[[cutcomp]])
   cutobj$desc<-modelpickobj$desc
   cutobj$desc$cutcomp<-cutcomp
-  cutobj$desc$uncertlevel<-uncertlevelpct
+  cutobj$desc$certlevel<-newcertlevel
   cutobj$datawithids<-modelpickobj$datawithids
   
   return(cutobj) 
 }
 
 #-----------------------------------------------
-#[IC12]  cutuncertgraph
+#[IC12] cutuncertgraph
 #-----------------------------------------------
 #Displays the uncertainty function after components have been combined to create positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively).
 cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
@@ -1101,8 +1041,9 @@ cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbr
 }
 
 #-----------------------------------------------
-#[IC14]  outputdata
+#[IC14]  summaryout: combine outputdata and summarytable
 #-----------------------------------------------
+
 outputdata<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
   if (is.null(standindetobj)==T & is.null(specindetobj)==T) {
     print("At least one post-cut object must be included")
@@ -1124,10 +1065,6 @@ outputdata<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
   }
   return(dataout)
 }
-
-#-----------------------------------------------
-#[IC15]  summarytable
-#-----------------------------------------------
 #Creates table which summarizes the results of the cutting functions, yeilding the cutpoint, indeterminate ranges, counts and percentages for the dichotomous cut, 80 and 90 indeterminate ranges and (if desired) one non-standard uncertainty level.
 summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
   comptable <- function(table){
@@ -1276,64 +1213,6 @@ summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
   message(paste("90% Certainty Range: (", round(standindetobj$bound90[1], 3), ", ", round(standindetobj$bound90[2], 3), ")", sep=""))
   
   return(model)
-}
-
-#-----------------------------------------------
-#[IC16]  doallprobsfail
-#-----------------------------------------------
-#Performs all of the above functions, but is very unlikely to function since in the majority of cases a the two component case will not be optimal by BIC
-doallprobsfail<-function(datawithids,fitres=NA){
-  
-  if (length(fitres)==1){
-    fitres5<-fitloops(datawithids)
-  }
-  
-  bestfit5<-bestfits(fitres5)
-  bicgraph(bestfit5)
-  pickobj5<-fitpick(fitres5,bestfit5)
-  uncertobj5<-uncert(pickobj5)
-  multcutobj5<-multcut(uncertobj5)
-  rawdistgraph(pickobj5)
-  rawuncertgraph(uncertobj5,multcutobj5)
-  rawhistcuts(uncertobj5,multcutobj5)
-  standindetpts5<-standindet(uncertobj5,multcutobj5)
-  cutuncertgraph(standindetpts5)
-  cutdistgraph(standindetpts5, pickobj5)
-  nsindet5<-nsstandindets(uncertobj5,multcutobj5,certlevel=0.8,cutcomp=1)
-  cutuncertgraph(nsindet5)
-  cutdistgraph(nsindet5, pickobj5)
-  outdata5<-outputdata(standindetpts5,nsindet5)
-  summary<-summarytable(outdata5, standindetpts5, nsindet5)
-  
-}
- 
-#-----------------------------------------------
-#[IC17]  twobestdorest
-#-----------------------------------------------
-#Performs all functions after bestfit if the optimal number of components is 2.
-twobestdorest<-function(fitloopsobj,bestfit){
-  
-  pickobj<-fitpick(fitloopsobj,bestfit)
-  uncertobj<-uncert(pickobj)
-  multcutobj<-multcut(uncertobj)
-  rawdistgraph(pickobj)
-  rawuncertgraph(uncertobj,multcutobj)
-  rawhistcuts(uncertobj,multcutobj)
-  scptsobj<-standindet(uncertobj,multcutobj)
-  cutuncertgraph(scptsobj)
-  cutdistgraph(scptsobj, pickobj)
-  outdata<-outputdata(standindetpts,nsindet)
-  summary<-summarytable(outdata, standindetpts, nsindet)
-  
-  model<-vector("list")
-  model$uncertobj<-uncertobj
-  model$multcutobj<-multcutobj
-  model$scptsobj<-scptsobj
-  model$outdataobj<-outdata
-  model$summaryobj<-summary
-  
-  return(model)
-  
 }
 
 
