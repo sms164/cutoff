@@ -308,11 +308,11 @@ bicgraph<-function(model,title="BIC by type and number of components",setcolor=c
 }
 
 #-----------------------------------------------
-#[IC3]  cutpick
+#[IC3]  modelpick
 #-----------------------------------------------
 #Selects a specific distribution and format so that it can be read into the uncertainty functions. Default picks the optimized BIC function from bestfits, but this can be adjusted if the user chooses otherwise. The function also performs uncertainty calculations and calculates raw percentages and counts positive and negative for all possible cut points between distributions
 
-cutpick<-function(fitres, dist="", ncomp=NA){
+modelpick<-function(fitres, dist="", ncomp=NA){
   #fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
   if (dist=="" & is.na(ncomp)==T) {
     dist=fitres$bestdesc$dist
@@ -542,10 +542,10 @@ cutpick<-function(fitres, dist="", ncomp=NA){
 }
   
 #-----------------------------------------------
-#[IC7]  rawuncertgraph
+#[IC4]  rawuncertgraph
 #-----------------------------------------------
 #Displays the overall uncertainty function (which is 1-max(probability of membership to component i)) with the possible cut-points overlaid. Note: Sometimes the cutpoint does not line up exactly with a peak in the uncertainty function, which looks like a flaw, but is not. In a two component setting, the cutpoint will always occur at the peak of the uncertainty but this is not always the case when there are more than two components.
-rawuncertgraph<-function(cutpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
+rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -559,26 +559,26 @@ rawuncertgraph<-function(cutpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=
   
   grobj<-list()
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
-    grobj$minval<-(1/10)*trunc(10*min(cutpickobj$datawithids$data)) 
-    grobj$maxval<-max(cutpickobj$datawithids$data)
+    grobj$minval<-(1/10)*trunc(10*min(modelpickobj$datawithids$data)) 
+    grobj$maxval<-max(modelpickobj$datawithids$data)
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
   }
 
-  plot(cutpickobj$v, cutpickobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", cutpickobj$desc$dist, "with", cutpickobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
+  plot(modelpickobj$v, modelpickobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", modelpickobj$desc$dist, "with", modelpickobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
     
   col<-setcolor
-  ncomp<-cutpickobj$desc$ncomp
-  for (i in 1:(cutpickobj$desc$ncomp-1)){
-    abline(v =cutpickobj$cutpoint[i], untf = T, col=col[i], lwd=2)
+  ncomp<-modelpickobj$desc$ncomp
+  for (i in 1:(modelpickobj$desc$ncomp-1)){
+    abline(v =modelpickobj$cutpoint[i], untf = T, col=col[i], lwd=2)
   }
   
   if (suppresslegend==F) {
     legtxt<-vector("character", ncomp)
     colors<-vector("character", ncomp)
     for (i in 2:ncomp){
-      legtxt[i]<-paste(cutpickobj$cutnames[i-1], " , x=", round(cutpickobj$cutpoint[i-1], 2), sep="")
+      legtxt[i]<-paste(modelpickobj$cutnames[i-1], " , x=", round(modelpickobj$cutpoint[i-1], 2), sep="")
       colors[i]<-col[i-1]
     }  
     legtxt[1]<-"Uncertainty"
@@ -590,10 +590,10 @@ rawuncertgraph<-function(cutpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=
 
 
 #-----------------------------------------------
-#[IC8]  rawdistgraph
+#[IC5]  rawdistgraph
 #-----------------------------------------------
 #Displays the distributions of all the components for the chosen combination of distribution and number of components. 
-rawdistgraph<-function(pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
+rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -605,14 +605,14 @@ rawdistgraph<-function(pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=10
   "black"            #9
 )){
   #Parameter specification
-  ncomp=pickobj$desc$ncomp
+  ncomp=modelpickobj$desc$ncomp
   grobj<-vector("list")
   grobj$gpar<-vector("list")
-  data<-pickobj$datawithids$data
+  data<-modelpickobj$datawithids$data
   color<-setcolor
   
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
-    grobj$minval<-(1/10)*trunc(10*min(pickobj$datawithids$data)) 
+    grobj$minval<-(1/10)*trunc(10*min(modelpickobj$datawithids$data)) 
     grobj$maxval<-max(data)
   } else {
     grobj$minval<-xlim[1]
@@ -634,10 +634,10 @@ rawdistgraph<-function(pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=10
   grobj$colors<-grobj$coloropt[[ncomp]]
   
   for (i in 1:ncomp){
-    grobj$gpar$mean[i]=pickobj$par$mean[i]
-    grobj$gpar$sd[i]=sqrt(pickobj$par$sigma2[i])
-    grobj$gpar$shape[i]=pickobj$par$shape[i]
-    grobj$gpar$pii[i]=pickobj$par$pii[i]
+    grobj$gpar$mean[i]=modelpickobj$par$mean[i]
+    grobj$gpar$sd[i]=sqrt(modelpickobj$par$sigma2[i])
+    grobj$gpar$shape[i]=modelpickobj$par$shape[i]
+    grobj$gpar$pii[i]=modelpickobj$par$pii[i]
   }
   #Creation of points for curves of Graph at full scale (components scaled to add to overall density)
   for (i in 1:ncomp) {
@@ -652,14 +652,14 @@ rawdistgraph<-function(pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=10
   
   dist<-c(0)[rep(c(0), times=ncomp)]
   for (i in 1:ncomp){
-    if (pickobj$singlefit$shape[i]>0) {
+    if (modelpickobj$singlefit$shape[i]>0) {
       dist[i]<-1
     }
   }
   
   #Plot Graph
   
-  hist(data, freq=F, breaks=setbreaks, xlab=xlab, ylab="Density", main=paste("Distribution of", ncomp, pickobj$desc$dist,"Components", sep = " "), border="grey", ylim=grobj$ylim, xlim=grobj$xlim)
+  hist(data, freq=F, breaks=setbreaks, xlab=xlab, ylab="Density", main=paste("Distribution of", ncomp, modelpickobj$desc$dist,"Components", sep = " "), border="grey", ylim=grobj$ylim, xlim=grobj$xlim)
   for (i in 1:ncomp) {
     lines(grobj$t, grobj$gt[[i]], lwd=2, col=grobj$colors[i])
   }
@@ -681,11 +681,11 @@ rawdistgraph<-function(pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=10
 }
 
 #-----------------------------------------------
-#[IC9]  rawhistcuts
+#[IC6]  rawhistcuts
 #-----------------------------------------------
 #Displays which component each bar of the histogram would be assigned to. 
 
-rawhistcuts<-function(cutpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,setcolor=c(
+rawhistcuts<-function(modelpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -696,7 +696,7 @@ rawhistcuts<-function(cutpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=
   "grey",            #8
   "black"            #9
 )){
-  data<-cutpickobj$datawithids$data
+  data<-modelpickobj$datawithids$data
   grobj<-list()
   
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
@@ -710,8 +710,8 @@ rawhistcuts<-function(cutpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=
     hist<-hist(datalim, breaks=setbreaks, plot=F)
   }
   
-  ncomp<-cutpickobj$desc$ncomp
-  cuts <- cut(hist$breaks, c(-Inf,cutpickobj$cutpoint,Inf))
+  ncomp<-modelpickobj$desc$ncomp
+  cuts <- cut(hist$breaks, c(-Inf,modelpickobj$cutpoint,Inf))
   
   color<-setcolor
   coloropt<-vector("list", 5)
@@ -731,7 +731,7 @@ rawhistcuts<-function(cutpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=
       }
     }
   }
-  plot(hist, col=colors, xlab=xlab, ylab="Density", main=paste("Classification by", cutpickobj$desc$dist, "with", ncomp, "components", sep = " "), freq=F, lty="blank")
+  plot(hist, col=colors, xlab=xlab, ylab="Density", main=paste("Classification by", modelpickobj$desc$dist, "with", ncomp, "components", sep = " "), freq=F, lty="blank")
   
   if (suppresslegend==F){
     legtxt<-vector("character", ncomp)
@@ -746,18 +746,18 @@ rawhistcuts<-function(cutpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=
 }
 
 #-----------------------------------------------
-#[IC10] standindet
+#[IC7] standindet
 #-----------------------------------------------
 #After deciding which distribution to cut after, this function provides cutpoint and standard indeterminate ranges (80 and 90), as well as classification into negative, indeterminate and positive components. It should be noted that the function is written so that it will still run if a lower or upper bound is not found, in which case all subjects below the upper bound (if lower bound not found) or above the lower bound (if upper bound not found) will be classified as indeterminate. In this case it is reccommeded that the non-standard cuts function be used to find a more descriptive indeterminate range.
-standindet<-function(cutpickobj,cutcomp=0){
-  data<-cutpickobj$datawithids$data
-  n=cutpickobj$desc$ncomp
+standindet<-function(modelpickobj,cutcomp=0){
+  data<-modelpickobj$datawithids$data
+  n=modelpickobj$desc$ncomp
   if (n==2){
     cutcomp=1
   } else if (cutcomp==0) {
     stop("Component to cut after must be specified. For example if you wanted to cut between components 2 and 3, set cutcomp=2")
   }
-  uncertdf<-cutpickobj$uncertdf[[cutcomp]]
+  uncertdf<-modelpickobj$uncertdf[[cutcomp]]
   closest<-function(uncertdf,min,max,level){
     uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
     diff.cut<-abs(uncertdf2$uncertainty.v - level)
@@ -782,7 +782,7 @@ standindet<-function(cutpickobj,cutcomp=0){
     }
     return(cut)
   }
-  cutpoint<-cutpickobj$cutpoint[cutcomp]  
+  cutpoint<-modelpickobj$cutpoint[cutcomp]  
   minunclb<-closest(uncertdf,min(data)+0.0001,cutpoint,0.0001)
   minuncub<-closest(uncertdf,cutpoint,max(data),0)
   lb80<-crosses(uncertdf,minunclb,cutpoint,0.2)  
@@ -806,7 +806,7 @@ standindet<-function(cutpickobj,cutcomp=0){
     message("Upper bound of the 90% indeterminate range not found because uncertainty is never below 5% to the right of the cutpoint. Consider using non-standard bound function to find more descriptive indeterminate range")
   }
   
-  class<-data.frame(id=cutpickobj$datawithids$id, data=cutpickobj$datawithids$data)
+  class<-data.frame(id=modelpickobj$datawithids$id, data=modelpickobj$datawithids$data)
   class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
   class$group90<-"indeterminate"
   class$group90[class$data<=bound90[1]]<-"negative"
@@ -829,13 +829,13 @@ standindet<-function(cutpickobj,cutcomp=0){
   cutobj$class<-class
   cutobj$uncertdf<-uncertdf
   cutobj$type<-"Standard"
-  cutobj$uncertobj<-cutpickobj$uncertmat
+  cutobj$uncertobj<-modelpickobj$uncertmat
   cutobj$density<-vector("list")
-  cutobj$density$g1<-cutpickobj$g1[[cutcomp]]
-  cutobj$density$g2<-cutpickobj$g2[[cutcomp]]
-  cutobj$desc<-cutpickobj$desc
+  cutobj$density$g1<-modelpickobj$g1[[cutcomp]]
+  cutobj$density$g2<-modelpickobj$g2[[cutcomp]]
+  cutobj$desc<-modelpickobj$desc
   cutobj$desc$cutcomp<-cutcomp
-  cutobj$datawithids<-cutpickobj$datawithids
+  cutobj$datawithids<-modelpickobj$datawithids
   
   return(cutobj) 
 }
@@ -844,13 +844,13 @@ standindet<-function(cutpickobj,cutcomp=0){
 #[IC11]  specindet
 #-----------------------------------------------
 #Provides cutpoint and allows the user to specify a maximum tolerable uncertianty which will be used to calculate an indeterminate ranges, as well as classification into negative, indeterminate and positive components. Maximum tolerable uncertianty is 1-certainty level (ex: uncertlevel=0.05 for 95% indetermintate range since the 95% certainty means that uncertainty of classification is less than 0.05 for all samples classified as positive or negative).
-specindet<-function(cutpickobj,certlevel,cutcomp=0){
+specindet<-function(modelpickobj,certlevel,cutcomp=0){
   uncertlevel<-1-certlevel
   uncertlevelpct<-certlevel
   
-  PD.v<-cutpickobj$uncertmat
-  data<-cutpickobj$datawithids$data
-  n=cutpickobj$desc$ncomp
+  PD.v<-modelpickobj$uncertmat
+  data<-modelpickobj$datawithids$data
+  n=modelpickobj$desc$ncomp
   
   if (n==2){
     cutcomp=1
@@ -861,7 +861,7 @@ specindet<-function(cutpickobj,certlevel,cutcomp=0){
     stop("Certainty level must be between 0.5 and 1, for example if you wanted a certainty level of 80% set certlevel=0.80")
   }
   
-  uncertdf<-cutpickobj$uncertdf[[cutcomp]]
+  uncertdf<-modelpickobj$uncertdf[[cutcomp]]
   closest<-function(uncertdf,min,max,level){
     uncertdf2 <- uncertdf[ which(uncertdf$v>=min & uncertdf$v<max), ]
     diff.cut<-abs(uncertdf2$uncertainty.v - level)
@@ -892,7 +892,7 @@ specindet<-function(cutpickobj,certlevel,cutcomp=0){
   ubuns<-crosses(uncertdf,cutpoint,minuncub,uncertlevel)
   bound<-c(lbuns, ubuns)
   
-  class<-data.frame(id=cutpickobj$datawithids$id, data=cutpickobj$datawithids$data)
+  class<-data.frame(id=modelpickobj$datawithids$id, data=modelpickobj$datawithids$data)
   class$groupdi<-ifelse(class$data>=cutpoint, "positive", "negative")
   class$group<-"indeterminate"
   class$group[class$data<=bound[1]]<-"negative"
@@ -908,12 +908,12 @@ specindet<-function(cutpickobj,certlevel,cutcomp=0){
   cutobj$class<-class
   cutobj$uncertdf<-uncertdf
   cutobj$type<-"Non.Standard"
-  cutobj$uncertobj<-cutpickobj$uncertmat
-  cutobj$density<-data.frame(g1=cutpickobj$g1[[cutcomp]], g2=cutpickobj$g2[[cutcomp]])
-  cutobj$desc<-cutpickobj$desc
+  cutobj$uncertobj<-modelpickobj$uncertmat
+  cutobj$density<-data.frame(g1=modelpickobj$g1[[cutcomp]], g2=modelpickobj$g2[[cutcomp]])
+  cutobj$desc<-modelpickobj$desc
   cutobj$desc$cutcomp<-cutcomp
   cutobj$desc$uncertlevel<-uncertlevelpct
-  cutobj$datawithids<-cutpickobj$datawithids
+  cutobj$datawithids<-modelpickobj$datawithids
   
   return(cutobj) 
 }
