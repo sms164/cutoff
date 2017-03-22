@@ -819,6 +819,7 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
     class$group80<-as.factor(class$group80)
     class$group80 = factor(class$group80,levels(class$group80)[c(2,3,1)])
     class$group90 = factor(class$group90,levels(class$group90)[c(2,3,1)])
+    class$group<-NA
   }
   
   if (newcertlevel>0){
@@ -832,6 +833,10 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
     }
     if (is.na(ubuns)==T){
       message(paste("Upper bound of the ", 100*certlevel, "% indeterminate range not found because uncertainty is never below ", 100*(1-certlevel), "% to the right of the cutpoint. Consider adjusting the non-standard certainty option (newcertlevel) to find a more descriptive indeterminate range.", sep=""))
+    }
+    if (standardcert==F){
+      class$group90<-NA
+      class$group80<-NA
     }
     class$group<-"indeterminate"
     class$group[class$data<=bound[1]]<-"negative"
@@ -1086,27 +1091,26 @@ cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100
 #-----------------------------------------------
 
 #Creates table which summarizes the results of the cutting functions, yeilding the cutpoint, indeterminate ranges, counts and percentages for the dichotomous cut, 80 and 90 indeterminate ranges and (if desired) one non-standard uncertainty level.
-summaryout<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
+summaryout<-function(cutobj,fileandpathname=NULL){
   
-  if (is.null(standindetobj)==T & is.null(specindetobj)==T) {
-    print("At least one post-cut object must be included")
+  if (is.null(cutobj)==T) {
+    print("Cutoff object must be specified")
+  } 
+  if (cutobj$type=="Standard"){
+    dataout<-cutobj$class[c("id", "data", "group80", "group90")]
+    names(dataout)<-c(names(cutobj$class[c(1,2,5,4)]))
+  } else if (cutobj$type=="Non.Standard"){
+    dataout<-cutobj$class[c("id", "data", "group")]
+    names(dataout)<-c(names(cutobj$class[c(1,2)]),paste('group', (100*cutobj$desc$certlevel), sep=''))
   } else {
-    if (is.null(standindetobj)==T) {
-      names(specindetobj$class)<-c(names(specindetobj$class[1:3]),paste('group', (100*specindetobj$desc$uncertlevel), sep=''))
-      dataout<-specindetobj$class
-    } else if (is.null(specindetobj)==T){
-      dataout<-standindetobj$class
-    } else {
-      datastand<-standindetobj$class[c("id", "group80", "group90")]
-      names(specindetobj$class)<-c(names(specindetobj$class[1:3]),paste('group', (100*specindetobj$desc$uncertlevel), sep=''))
-      datanonst<-specindetobj$class
-      dataout<-merge(datanonst,datastand,by.x="id", by.y="id")
-    }
-    if (is.null(fileandpathname)==F){
-      write.csv(dataout, file =paste(fileandpathname, ".csv", sep=""), row.names=F)
-    }
+    dataout<-cutobj$class[c("id", "data","group80", "group90", "group")]
+    names(dataout)<-c(names(cutobj$class[c(1,2,5,4)]),paste('group', (100*cutobj$desc$certlevel), sep=''))
   }
-  
+
+  if (is.null(fileandpathname)==F){
+    write.csv(dataout, file =paste(fileandpathname, ".csv", sep=""), row.names=F)
+  }
+
   outdataobj<-dataout
   
   comptable <- function(table){
@@ -1213,11 +1217,11 @@ summaryout<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
     pneg[i]<-paste(round(100*dneg[i], 2), "%", sep="")
   }
   if (ncol(grps)==4){
-    grpname<-c("Raw Cutoff", paste("Cutoff with ", specindetobj$desc$uncertlevel*100, "% Certainty", sep=""))
+    grpname<-c("Raw Cutoff", paste("Cutoff with ", cutobj$desc$uncertlevel*100, "% Certainty", sep=""))
   } else if (ncol(grps)==5) {
     grpname<-c("Raw Cutoff", "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
   } else if (ncol(grps)==6) {
-    grpname<-c("Raw Cutoff", paste("Cutoff with ", specindetobj$desc$uncertlevel*100, "% Certainty", sep=""), "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
+    grpname<-c("Raw Cutoff", paste("Cutoff with ", cutobj$desc$uncertlevel*100, "% Certainty", sep=""), "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
   }
   
   classtab<-data.frame(nneg, nind, npos, dneg, dind, dpos)
@@ -1226,33 +1230,33 @@ summaryout<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
   colnames(outtab) <-c("No. Neg", "No. Indet", "No. Pos", "% Neg", "% Indet", "% Pos")
   
   model<-vector("list")
-  if (is.null(specindetobj)==F){
-    model$cutpoint<-specindetobj$cutpoint
-    model$desc<-specindetobj$desc
+  if (is.null(cutobj)==F){
+    model$cutpoint<-cutobj$cutpoint
+    model$desc<-cutobj$desc
     model$bounds<-vector("list")
-    model$bounds$boundns<-specindetobj$bound
+    model$bounds$boundns<-cutobj$bound
   } else {
-    model$cutpoint<-standindetobj$cutpoint     
-    model$desc<-standindetobj$desc
+    model$cutpoint<-cutobj$cutpoint     
+    model$desc<-cutobj$desc
     model$bounds<-vector("list")
-    model$bounds$bound80<-standindetobj$bound80
-    model$bounds$bound90<-standindetobj$bound90
+    model$bounds$bound80<-cutobj$bound80
+    model$bounds$bound90<-cutobj$bound90
   }
-  if (is.null(standindetobj)==F & is.null(specindetobj)==F){
-    model$bounds$bound80<-standindetobj$bound80
-    model$bounds$bound90<-standindetobj$bound90
+  if (is.null(cutobj)==F & is.null(cutobj)==F){
+    model$bounds$bound80<-cutobj$bound80
+    model$bounds$bound90<-cutobj$bound90
   }
   model$classtab<-classtab
   model$outtab<-outtab
   model$classification<-outdataobj
   
-  message(paste("The absolute cutoff is", round(standindetobj$cutpoint,3), sep=" "))
+  message(paste("The absolute cutoff is", round(cutobj$cutpoint,3), sep=" "))
   message("Boundries of Indeterminates:")
-  if (is.null(specindetobj)==F) {
-    message(paste(specindetobj$desc$uncertlevel*100, "% Certainty Range: (", round(specindetobj$bound[1], 3), ", ", round(specindetobj$bound[2], 3), ")", sep=""))
+  if (is.null(cutobj)==F) {
+    message(paste(cutobj$desc$uncertlevel*100, "% Certainty Range: (", round(cutobj$bound[1], 3), ", ", round(cutobj$bound[2], 3), ")", sep=""))
   }
-  message(paste("80% Certainty Range: (", round(standindetobj$bound80[1], 3), ", ", round(standindetobj$bound80[2], 3), ")", sep=""))
-  message(paste("90% Certainty Range: (", round(standindetobj$bound90[1], 3), ", ", round(standindetobj$bound90[2], 3), ")", sep=""))
+  message(paste("80% Certainty Range: (", round(cutobj$bound80[1], 3), ", ", round(cutobj$bound80[2], 3), ")", sep=""))
+  message(paste("90% Certainty Range: (", round(cutobj$bound90[1], 3), ", ", round(cutobj$bound90[2], 3), ")", sep=""))
   
   return(model)
 }
