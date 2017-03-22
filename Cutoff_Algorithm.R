@@ -1097,14 +1097,14 @@ summaryout<-function(cutobj,fileandpathname=NULL){
     print("Cutoff object must be specified")
   } 
   if (cutobj$type=="Standard"){
-    dataout<-cutobj$class[c("id", "data", "group80", "group90")]
-    names(dataout)<-c(names(cutobj$class[c(1,2,5,4)]))
+    dataout<-cutobj$class[c("id", "data", "group80", "group90","groupdi")]
+    names(dataout)<-c(names(cutobj$class[c(1,2,5,4,3)]))
   } else if (cutobj$type=="Non.Standard"){
-    dataout<-cutobj$class[c("id", "data", "group")]
-    names(dataout)<-c(names(cutobj$class[c(1,2)]),paste('group', (100*cutobj$desc$certlevel), sep=''))
+    dataout<-cutobj$class[c("id", "data", "group", "groupdi")]
+    names(dataout)<-c(names(cutobj$class[c(1,2)]),paste('group', (100*cutobj$desc$certlevel), sep=''), names(cutobj$class[3]))
   } else {
-    dataout<-cutobj$class[c("id", "data","group80", "group90", "group")]
-    names(dataout)<-c(names(cutobj$class[c(1,2,5,4)]),paste('group', (100*cutobj$desc$certlevel), sep=''))
+    dataout<-cutobj$class[c("id", "data","group80", "group90", "group", "groupdi")]
+    names(dataout)<-c(names(cutobj$class[c(1,2,5,4)]),paste('group', (100*cutobj$desc$certlevel), sep=''), names(cutobj$class[3]))
   }
 
   if (is.null(fileandpathname)==F){
@@ -1112,8 +1112,10 @@ summaryout<-function(cutobj,fileandpathname=NULL){
   }
 
   outdataobj<-dataout
+
   
   comptable <- function(table){
+    
     dftable<-as.data.frame(table)
     len<-nrow(dftable)
     dftable$orders<-c(NA)[rep(c(1), times=len)]
@@ -1217,11 +1219,11 @@ summaryout<-function(cutobj,fileandpathname=NULL){
     pneg[i]<-paste(round(100*dneg[i], 2), "%", sep="")
   }
   if (ncol(grps)==4){
-    grpname<-c("Raw Cutoff", paste("Cutoff with ", cutobj$desc$uncertlevel*100, "% Certainty", sep=""))
+    grpname<-c("Raw Cutoff", paste("Cutoff with ", cutobj$desc$certlevel*100, "% Certainty", sep=""))
   } else if (ncol(grps)==5) {
     grpname<-c("Raw Cutoff", "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
   } else if (ncol(grps)==6) {
-    grpname<-c("Raw Cutoff", paste("Cutoff with ", cutobj$desc$uncertlevel*100, "% Certainty", sep=""), "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
+    grpname<-c("Raw Cutoff", paste("Cutoff with ", cutobj$desc$certlevel*100, "% Certainty", sep=""), "Cutoff with 80% Certainty", "Cutoff with 90% Certainty")
   }
   
   classtab<-data.frame(nneg, nind, npos, dneg, dind, dpos)
@@ -1253,7 +1255,7 @@ summaryout<-function(cutobj,fileandpathname=NULL){
   message(paste("The absolute cutoff is", round(cutobj$cutpoint,3), sep=" "))
   message("Boundries of Indeterminates:")
   if (is.null(cutobj)==F) {
-    message(paste(cutobj$desc$uncertlevel*100, "% Certainty Range: (", round(cutobj$bound[1], 3), ", ", round(cutobj$bound[2], 3), ")", sep=""))
+    message(paste(cutobj$desc$certlevel*100, "% Certainty Range: (", round(cutobj$bound[1], 3), ", ", round(cutobj$bound[2], 3), ")", sep=""))
   }
   message(paste("80% Certainty Range: (", round(cutobj$bound80[1], 3), ", ", round(cutobj$bound80[2], 3), ")", sep=""))
   message(paste("90% Certainty Range: (", round(cutobj$bound90[1], 3), ", ", round(cutobj$bound90[2], 3), ")", sep=""))
