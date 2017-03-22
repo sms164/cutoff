@@ -9,9 +9,9 @@
 
 
 #To complete this process, there are 5 necessary steps
-#I)   Install/load packages and load in functions (run lines 67 - 1350)
-#II)  Load in data (run lines: 1370)
-#III) Run each line of code separately, from 1380 to the end of the program, following the directions in the comments
+#I)   Install/load packages and load in functions (run lines 67 - 1270)
+#II)  Load in data (run lines: 1288)
+#III) Run each line of code separately, from 1314 to the end of the program, following the directions in the comments
 #     The code will: 1)determine which type of distribution and number of sub-populations is optimal; 2) let the user  
 #     determine which cutpoint is best (if a model with more than two components is optimal) and 3) display the cutoff results
  
@@ -32,7 +32,7 @@
 #[IC7]  cutoff
 #[IC8] cutuncertgraph
 #[IC9] cutdistgraph
-#[IC14] summaryout
+#[IC10] summaryout
 #-----------------------------------------------
 #[II] Load and clean data
 #[IIA] Import data 
@@ -283,7 +283,8 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
 #-----------------------------------------------
 #Plots BIC to show which combination of distributions and number of components is optimal by BIC. BIC is a criterion which should be minimized (ie we are looking for the most negative value), and a decrease in BIC of 10 or more is "strong evidence" that the model with lower BIC is superior. However in some cases you may want to choose a different distribution and this graph allows for an easy compairison of relative BIC.
 
-bicgraph<-function(model,title="BIC by type and number of components",setcolor=c("magenta", "blue", "black")){
+bicgraph<-function(fitobj,title="BIC by type and number of components",setcolor=c("magenta", "blue", "black")){
+  model<-fitobj
   color<-setcolor
   buffer<-(max(model$bictab)-min(model$bictab))/20
   ylim<-c(min(model$bictab)-buffer, max(model$bictab)+buffer)
@@ -305,8 +306,9 @@ bicgraph<-function(model,title="BIC by type and number of components",setcolor=c
 #-----------------------------------------------
 #Selects a specific distribution and format so that it can be read into the uncertainty functions. Default picks the optimized BIC function from bestfits, but this can be adjusted if the user chooses otherwise. The function also performs uncertainty calculations and calculates raw percentages and counts positive and negative for all possible cut points between distributions
 
-modelpick<-function(fitres, dist="", ncomp=NA){
+modelpick<-function(fitobj, dist="", ncomp=NA){
   #fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
+  fitres<-fitobj
   if (dist=="" & is.na(ncomp)==T) {
     dist=fitres$bestdesc$dist
     ncomp=fitres$bestdesc$ncomp
@@ -1087,7 +1089,7 @@ cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100
 }
 
 #-----------------------------------------------
-#[IC14]  summaryout: not yet usable
+#[IC10]  summaryout
 #-----------------------------------------------
 
 #Creates table which summarizes the results of the cutting functions, yeilding the cutpoint, indeterminate ranges, counts and percentages for the dichotomous cut, 80 and 90 indeterminate ranges and (if desired) one non-standard uncertainty level.
@@ -1254,11 +1256,13 @@ summaryout<-function(cutobj,fileandpathname=NULL){
   
   message(paste("The absolute cutoff is", round(cutobj$cutpoint,3), sep=" "))
   message("Boundries of Indeterminates:")
-  if (is.null(cutobj)==F) {
+  if (cutobj$type!="Standard"){
     message(paste(cutobj$desc$certlevel*100, "% Certainty Range: (", round(cutobj$bound[1], 3), ", ", round(cutobj$bound[2], 3), ")", sep=""))
   }
-  message(paste("80% Certainty Range: (", round(cutobj$bound80[1], 3), ", ", round(cutobj$bound80[2], 3), ")", sep=""))
-  message(paste("90% Certainty Range: (", round(cutobj$bound90[1], 3), ", ", round(cutobj$bound90[2], 3), ")", sep=""))
+  if (cutobj$type!="Non.Standard"){  
+    message(paste("80% Certainty Range: (", round(cutobj$bound80[1], 3), ", ", round(cutobj$bound80[2], 3), ")", sep=""))
+    message(paste("90% Certainty Range: (", round(cutobj$bound90[1], 3), ", ", round(cutobj$bound90[2], 3), ")", sep=""))
+  }
   
   return(model)
 }
@@ -1320,9 +1324,9 @@ plot(dens, main="Density of Data")
 #     mean you may have to try it a couple times)
 #-----------------------------------------------
 
-fitloopsobject<-fitloops(datawithids=examp)
-bestfitsobject<-bestfits(fitres=fitloopsobject)
-bicgraph(model=bestfitsobject)
+fitloopsobject<-fitloops(datawithids = examp)
+
+bicgraph(fitobj = fitloopsobject2)
 
 #-----------------------------------------------
 #[IIIC] Pick the best combination of distribution and components (usually the one that is optimal by BIC unless there is scientific rationale)
@@ -1330,13 +1334,13 @@ bicgraph(model=bestfitsobject)
 #     To default to the optimal fit (recommended!) run the code as it is written below.
 #     If you would like to specify a distribution or number of sub-populations the function call line is:
 #
-#              fitpick<-function(fitres,bestfits,dist="",ncomp=NA){
+#              modelpick(fitobj = , dist = "", ncomp = NA){
 #
 #                 dist: either "Normal" or "Skew-normal"
 #                 ncomp: number from 1 to 5
 #-----------------------------------------------
-fitpickobject<-fitpick(fitres=fitloopsobject,bestfits=bestfitsobject)
 
+modelpickobject2<-modelpick(fitobj = fitloopsobject2)
 
 
 #-----------------------------------------------
@@ -1345,16 +1349,12 @@ fitpickobject<-fitpick(fitres=fitloopsobject,bestfits=bestfitsobject)
 #-----------------------------------------------
 #[IVA] Investigate proportions of positivity and compare to scientific context
 #-----------------------------------------------
-uncertobject<-uncert(fitpickobj=fitpickobject)
-multcutobject<-multcut(uncertobj=uncertobject)
 #-----------------------------------------------
 #[IVB] Utilize visualizations of uncertainty, distributions and cutpoint to aid in decision-making
 #-----------------------------------------------
-rawuncertgraph(uncertobj=uncertobject,multcutobj=multcutobject)
-rawdistgraph(pickobj=fitpickobject)
-rawhistcuts(uncertobj=uncertobject,multcutobj=multcutobject)
-
-
+rawuncertgraph(modelpickobj = modelpickobject2)
+rawdistgraph(modelpickobj = modelpickobject2)
+rawhistcuts(modelpickobj = modelpickobject2)
 
 #-----------------------------------------------
 #[V]   Create the cutpoint and investigate what resulting distributions look like
@@ -1367,25 +1367,26 @@ rawhistcuts(uncertobj=uncertobject,multcutobj=multcutobject)
 #
 #     The function call line is:
 #
-#           standindet<-function(uncertobj,multcutobj,cutcomp=0){
+#           cutoff<-function(modelpickobj = , cutcomp = 0, standardcert = T, newcertlevel = NA){
 #
 #     cutcomp = the lower of the two distributions between which you want to set the cutoff. 
 #               So, for example, set the cutoff between 1 and 2, let cutcomp = 1. To set the 
 #               To set the cutoff between distributions 4 and 5, let cutcomp = 4.
+#     standardcert = T to generate the standard indeterminate ranges (80 % and 90% certainty).
+#                  = F to repress generating the standard indeterminate ranges (80 % and 90% certainty).
+#     newcertlevel = the certainty level of a new indeterminate range which you want to create. It should lie on the range 0.5<x<1
+#
 #-----------------------------------------------
-standindetobject<-standindet(uncertobj=uncertobject,multcutobj=multcutobject,cutcomp=1)
-specindetobject<-specindet(uncertobj=uncertobject,multcutobj=multcutobject,cutcomp=1,certlevel=0.8)
+cutoffobject2<-cutoff(modelpickobj = modelpickobject2, cutcomp = 1, standardcert = T, newcertlevel = 0.95)
 
 #-----------------------------------------------
 #[VB]  Investigate resulting distributions and classifications
 #-----------------------------------------------
-cutuncertgraph(cutobj=standindetobject)
-cutdistgraph(cutobj=standindetobject, pickobj=fitpickobject)
-cutuncertgraph(cutobj=specindetobject)
-cutdistgraph(cutobj=specindetobject, pickobj=fitpickobject)
-outdataobject<-outputdata(standindet=standindetobject,specindet=specindetobject)
-summaryobject<-summarytable(outdataobj=outdataobject, standindetobj=standindetobject, specindetobj=specindetobject)
-outtable<-summaryobject$outtab
+cutuncertgraph(cutobj = cutoffobject2)
+cutdistgraph(cutobj = cutoffobject2)
+
+summaryobject2<-summaryout(cutobj = cutoffobject2)
+outtable<-summaryobject2$outtab
 outtable
 
 
