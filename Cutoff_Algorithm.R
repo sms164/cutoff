@@ -87,7 +87,10 @@ library("sn")
 #accepts a dataframe with columns id and data
 fitloops<-function(datawithids,loops=10,maxcp=5){
   dists="Both"
-  datawithids<-unique(datawithids)
+  datawithids2<-unique(datawithids)
+  if (nrow(unique(datawithids))!=nrow(datawithids)){
+    stop("The input data (datawithids) must not include duplicates. Please remove duplicates.")
+  }
   data<-datawithids$data
   datapts<-length(data)
   norms<-vector("list")
@@ -139,7 +142,7 @@ fitloops<-function(datawithids,loops=10,maxcp=5){
       ic=i
     }
   }
-  
+
   if (i==maxcp & j==loops+1 & max(errors[maxcp, 2])<=2 & max(errors[maxcp, 1])<=2 ) {
     nobj<-vector("list")
     nobj$mc<-matrix(nrow=maxcp, ncol=loops)
@@ -1326,7 +1329,7 @@ plot(dens, main="Density of Data")
 
 fitloopsobject<-fitloops(datawithids = examp)
 
-bicgraph(fitobj = fitloopsobject2)
+bicgraph(fitobj = fitloopsobject)
 
 #-----------------------------------------------
 #[IIIC] Pick the best combination of distribution and components (usually the one that is optimal by BIC unless there is scientific rationale)
@@ -1340,7 +1343,7 @@ bicgraph(fitobj = fitloopsobject2)
 #                 ncomp: number from 1 to 5
 #-----------------------------------------------
 
-modelpickobject2<-modelpick(fitobj = fitloopsobject2)
+modelpickobject<-modelpick(fitobj = fitloopsobject)
 
 
 #-----------------------------------------------
@@ -1352,9 +1355,9 @@ modelpickobject2<-modelpick(fitobj = fitloopsobject2)
 #-----------------------------------------------
 #[IVB] Utilize visualizations of uncertainty, distributions and cutpoint to aid in decision-making
 #-----------------------------------------------
-rawuncertgraph(modelpickobj = modelpickobject2)
-rawdistgraph(modelpickobj = modelpickobject2)
-rawhistcuts(modelpickobj = modelpickobject2)
+rawuncertgraph(modelpickobj = modelpickobject)
+rawdistgraph(modelpickobj = modelpickobject)
+rawhistcuts(modelpickobj = modelpickobject)
 
 #-----------------------------------------------
 #[V]   Create the cutpoint and investigate what resulting distributions look like
@@ -1377,16 +1380,16 @@ rawhistcuts(modelpickobj = modelpickobject2)
 #     newcertlevel = the certainty level of a new indeterminate range which you want to create. It should lie on the range 0.5<x<1
 #
 #-----------------------------------------------
-cutoffobject2<-cutoff(modelpickobj = modelpickobject2, cutcomp = 1, standardcert = T, newcertlevel = 0.95)
+cutoffobject<-cutoff(modelpickobj = modelpickobject, cutcomp = 1, standardcert = T, newcertlevel = 0.95)
 
 #-----------------------------------------------
 #[VB]  Investigate resulting distributions and classifications
 #-----------------------------------------------
-cutuncertgraph(cutobj = cutoffobject2)
-cutdistgraph(cutobj = cutoffobject2)
+cutuncertgraph(cutobj = cutoffobject)
+cutdistgraph(cutobj = cutoffobject)
 
-summaryobject2<-summaryout(cutobj = cutoffobject2)
-outtable<-summaryobject2$outtab
+summaryobject<-summaryout(cutobj = cutoffobject)
+outtable<-summaryobject$outtab
 outtable
 
 
