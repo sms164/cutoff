@@ -543,7 +543,7 @@ modelpick<-function(fitobj, dist="", ncomp=NA){
 #[IC4]  rawuncertgraph
 #-----------------------------------------------
 #Displays the overall uncertainty function (which is 1-max(probability of membership to component i)) with the possible cut-points overlaid. Note: Sometimes the cutpoint does not line up exactly with a peak in the uncertainty function, which looks like a flaw, but is not. In a two component setting, the cutpoint will always occur at the peak of the uncertainty but this is not always the case when there are more than two components.
-rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
+rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -555,6 +555,11 @@ rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegen
   "black"            #9
 )){
   
+  if (title!="default"){
+    title=title
+  } else {
+    title=paste("Uncertainty Plot with Possible Cutpoints for", modelpickobj$desc$dist, "with", modelpickobj$desc$ncomp, "components", sep = " ")
+  }
   grobj<-list()
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
     grobj$minval<-(1/10)*trunc(10*min(modelpickobj$datawithids$data)) 
@@ -564,7 +569,7 @@ rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegen
     grobj$maxval<-xlim[2]
   }
 
-  plot(modelpickobj$v, modelpickobj$mcluncert, main=paste("Uncertainty Plot with Possible Cutpoints for", modelpickobj$desc$dist, "with", modelpickobj$desc$ncomp, "components", sep = " "), type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
+  plot(modelpickobj$v, modelpickobj$mcluncert, main=title, type="l", ylim=c(0,1), xlim=c(grobj$minval,grobj$maxval), xlab=xlab, ylab="Uncertainty")
     
   col<-setcolor
   ncomp<-modelpickobj$desc$ncomp
@@ -591,7 +596,7 @@ rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegen
 #[IC5]  rawdistgraph
 #-----------------------------------------------
 #Displays the distributions of all the components for the chosen combination of distribution and number of components. 
-rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
+rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -615,6 +620,12 @@ rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbrea
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
+  }
+  
+  if (title!="default"){
+    title=title
+  } else {
+    title=paste("Distribution of", ncomp, modelpickobj$desc$dist,"Components", sep = " ")
   }
   
   grobj$t<-seq(grobj$minval,grobj$maxval,length=1000) 
@@ -657,7 +668,7 @@ rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbrea
   
   #Plot Graph
   
-  hist(data, freq=F, breaks=setbreaks, xlab=xlab, ylab="Density", main=paste("Distribution of", ncomp, modelpickobj$desc$dist,"Components", sep = " "), border="grey", ylim=grobj$ylim, xlim=grobj$xlim)
+  hist(data, freq=F, breaks=setbreaks, xlab=xlab, ylab="Density", main=title, border="grey", ylim=grobj$ylim, xlim=grobj$xlim)
   for (i in 1:ncomp) {
     lines(grobj$t, grobj$gt[[i]], lwd=2, col=grobj$colors[i])
   }
@@ -683,7 +694,7 @@ rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbrea
 #-----------------------------------------------
 #Displays which component each bar of the histogram would be assigned to. 
 
-rawhistcuts<-function(modelpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,setcolor=c(
+rawhistcuts<-function(modelpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -709,6 +720,13 @@ rawhistcuts<-function(modelpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreak
   }
   
   ncomp<-modelpickobj$desc$ncomp
+  
+  if (title!="default"){
+    title=title
+  } else {
+    title=paste("Classification by", modelpickobj$desc$dist, "with", ncomp, "components", sep = " ")
+  }
+  
   cuts <- cut(hist$breaks, c(-Inf,modelpickobj$cutpoint,Inf))
   
   color<-setcolor
@@ -729,7 +747,7 @@ rawhistcuts<-function(modelpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreak
       }
     }
   }
-  plot(hist, col=colors, xlab=xlab, ylab="Density", main=paste("Classification by", modelpickobj$desc$dist, "with", ncomp, "components", sep = " "), freq=F, lty="blank")
+  plot(hist, col=colors, xlab=xlab, ylab="Density", main=title, freq=F, lty="blank")
   
   if (suppresslegend==F){
     legtxt<-vector("character", ncomp)
@@ -887,7 +905,7 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
 #[IC8] cutuncertgraph
 #-----------------------------------------------
 #Displays the uncertainty function after components have been combined to create positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively).
-cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
+cutuncertgraph<-function(cutobj, xlab="Optical Density", xlim=c(NA,NA), suppresslegend=F, title="default", setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -901,12 +919,18 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppressleg
   color=setcolor
   grobj<-vector("list")
   
+  if (title!="default"){
+    title=title
+  } else {
+    title=paste("Uncertainty Plot of", cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " ")
+  }
+  
   if (is.na(xlim[1])==T | is.na(xlim[2])==T) {   
-    plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=paste("Uncertainty Plot of", cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " "),type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty")
+    plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=title, type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty")
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
-    plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=paste("Uncertainty Plot of", cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " "),type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty", xlim=c(grobj$minval,grobj$maxval))
+    plot(cutobj$uncertdf$v, cutobj$uncertdf$uncertainty.v, main=title, type="l", ylim=c(0,1), xlab=xlab, ylab="Uncertainty", xlim=c(grobj$minval,grobj$maxval))
   }
   
   abline(v =cutobj$cutpoint, untf = T, col=color[6], lwd=1)
@@ -968,7 +992,7 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppressleg
 #[IC9]  cutdistgraph
 #-----------------------------------------------
 #Displays the distributions of the positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively). 
-cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
+cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -995,6 +1019,12 @@ cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100
   } else {
     grobj$minval<-xlim[1]
     grobj$maxval<-xlim[2]
+  }
+  
+  if (title!="default"){
+    title=title
+  } else {
+    title=paste(cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " ")
   }
 
   grobj$t<-seq(grobj$minval,grobj$maxval,length=1000) 
@@ -1033,7 +1063,7 @@ cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100
   grobj$xlim<-c(round(min(data),digits=1),grobj$maxval)
   
   #Plot Graph
-  hist(data, freq=F, breaks=setbreaks, xlab=xlab, ylab="Density", main=paste(cutobj$desc$dist, "with", cutobj$desc$ncomp, "components, cut between distributions", cutobj$desc$cutcomp, "and", (cutobj$desc$cutcomp+1), sep = " "), border=color[8], ylim=grobj$ylim, xlim=grobj$xlim)
+  hist(data, freq=F, breaks=setbreaks, xlab=xlab, ylab="Density", main=title, border=color[8], ylim=grobj$ylim, xlim=grobj$xlim)
   
   for (i in 1:2) {
     lines(cutobj$uncertdf$v, grobj$gt[[i]], lwd=2, col=grobj$colors[i])
@@ -1063,7 +1093,7 @@ cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100
                 "Overall Distribution",
                 paste("Cutpoint=", round(cutobj$cutpoint, 2), sep =""), 
                 "Indeterminate Range with", 
-                paste((cutobj$desc$uncertlevel*100), "% Certainty: (", round(cutobj$bound[1], 2), " , ", round(cutobj$bound[2], 2), ")", sep ="")
+                paste((cutobj$desc$certlevel*100), "% Certainty: (", round(cutobj$bound[1], 2), " , ", round(cutobj$bound[2], 2), ")", sep ="")
       )
       legend("topright", col=c(color[1], color[5], color[9], color[6], color[3], "white"), lwd=c(2,2,2,1,1,1), legend=legtxt, xjust=1, seg.len=3, title="Distributions, Cutpoint, and Boundaries", lty=c(1,1,2,1,1,1))
     }
