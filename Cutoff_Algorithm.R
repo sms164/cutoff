@@ -64,8 +64,14 @@
 #[IA] Install Packages
 #-----------------------------------------------
 
-install.packages("mixsmsn")
-install.packages("sn")
+#This checks to see if packages are installed and if they are not, then it loads them
+
+if (require("mixsmsn")==F){
+  install.packages("mixsmsn")
+}
+if (require("sn")==F){
+  install.packages("sn")
+}
 
 #-----------------------------------------------
 #[IB] Load Packages
@@ -543,7 +549,7 @@ modelpick<-function(fitobj, dist="", ncomp=NA){
 #[IC4]  rawuncertgraph
 #-----------------------------------------------
 #Displays the overall uncertainty function (which is 1-max(probability of membership to component i)) with the possible cut-points overlaid. Note: Sometimes the cutpoint does not line up exactly with a peak in the uncertainty function, which looks like a flaw, but is not. In a two component setting, the cutpoint will always occur at the peak of the uncertainty but this is not always the case when there are more than two components.
-rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegend=F,title="default",setcolor=c(
+rawuncertgraph<-function(modelpickobj,xlab="x-value",xlim=c(NA,NA),suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -596,7 +602,7 @@ rawuncertgraph<-function(modelpickobj,xlab="X Value",xlim=c(NA,NA),suppresslegen
 #[IC5]  rawdistgraph
 #-----------------------------------------------
 #Displays the distributions of all the components for the chosen combination of distribution and number of components. 
-rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,title="default",setcolor=c(
+rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="x-value",setbreaks=100,suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -694,7 +700,7 @@ rawdistgraph<-function(modelpickobj,xlim=c(NA,NA),xlab="Optical Density",setbrea
 #-----------------------------------------------
 #Displays which component each bar of the histogram would be assigned to. 
 
-rawhistcuts<-function(modelpickobj,xlab="Optical Density",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,title="default",setcolor=c(
+rawhistcuts<-function(modelpickobj,xlab="x-value",xlim=c(NA,NA),setbreaks=250,suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -905,7 +911,7 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
 #[IC8] cutuncertgraph
 #-----------------------------------------------
 #Displays the uncertainty function after components have been combined to create positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively).
-cutuncertgraph<-function(cutobj, xlab="Optical Density", xlim=c(NA,NA), suppresslegend=F, title="default", setcolor=c(
+cutuncertgraph<-function(cutobj, xlab="x-value", xlim=c(NA,NA), suppresslegend=F, title="default", setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -992,7 +998,7 @@ cutuncertgraph<-function(cutobj, xlab="Optical Density", xlim=c(NA,NA), suppress
 #[IC9]  cutdistgraph
 #-----------------------------------------------
 #Displays the distributions of the positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively). 
-cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,title="default",setcolor=c(
+cutdistgraph<-function(cutobj,xlim=c(NA,NA),xlab="x-value",setbreaks=100,suppresslegend=F,title="default",setcolor=c(
   "green4",          #1
   "turquoise3",      #2
   "royalblue2",      #3
@@ -1318,7 +1324,8 @@ summaryout<-function(cutobj,fileandpathname=NULL){
 #         For this code to work your data must be a csv file
 #
 #-----------------------------------------------
-input<-read.table("/Users/sarahsullivan/Google Drive/Sarah Sullivan/Data/Working/ExampleData.csv", sep = ",", quote = "", header=TRUE)
+
+#input<-read.table("/Users/sarahsullivan/Google Drive/Sarah Sullivan/Data/Working/ExampleData.csv", sep = ",", quote = "", header=TRUE)
 
 
 #-----------------------------------------------
@@ -1330,7 +1337,7 @@ input<-read.table("/Users/sarahsullivan/Google Drive/Sarah Sullivan/Data/Working
 #
 #-----------------------------------------------
 
-examp<-data.frame(id=input$identifier, data=input$value)
+#examp<-data.frame(id=input$identifier, data=input$value)
 
 
 
@@ -1344,9 +1351,9 @@ examp<-data.frame(id=input$identifier, data=input$value)
 #         to make them more descriptive of the data
 #
 #-----------------------------------------------
-hist(examp$data, breaks=100, main="Histogram of Data")
-dens<-density(examp$data)
-plot(dens, main="Density of Data")
+#hist(examp$data, breaks=100, main="Histogram of Data")
+#dens<-density(examp$data)
+#plot(dens, main="Density of Data")
 
 #-----------------------------------------------
 #[IIIB] Run fitting function and determine which distribution and number of components is best by BIC
@@ -1357,9 +1364,9 @@ plot(dens, main="Density of Data")
 #     mean you may have to try it a couple times)
 #-----------------------------------------------
 
-fitloopsobject<-fitloops(datawithids = examp)
+#fitloopsobject<-fitloops(datawithids = examp)
 
-bicgraph(fitobj = fitloopsobject)
+#bicgraph(fitobj = fitloopsobject)
 
 #-----------------------------------------------
 #[IIIC] Pick the best combination of distribution and components (usually the one that is optimal by BIC unless there is scientific rationale)
@@ -1373,7 +1380,7 @@ bicgraph(fitobj = fitloopsobject)
 #                 ncomp: number from 1 to 5
 #-----------------------------------------------
 
-modelpickobject<-modelpick(fitobj = fitloopsobject)
+#modelpickobject<-modelpick(fitobj = fitloopsobject)
 
 
 #-----------------------------------------------
@@ -1385,9 +1392,9 @@ modelpickobject<-modelpick(fitobj = fitloopsobject)
 #-----------------------------------------------
 #[IVB] Utilize visualizations of uncertainty, distributions and cutpoint to aid in decision-making
 #-----------------------------------------------
-rawuncertgraph(modelpickobj = modelpickobject)
-rawdistgraph(modelpickobj = modelpickobject)
-rawhistcuts(modelpickobj = modelpickobject)
+#rawuncertgraph(modelpickobj = modelpickobject)
+#rawdistgraph(modelpickobj = modelpickobject)
+#rawhistcuts(modelpickobj = modelpickobject)
 
 #-----------------------------------------------
 #[V]   Create the cutpoint and investigate what resulting distributions look like
@@ -1410,17 +1417,17 @@ rawhistcuts(modelpickobj = modelpickobject)
 #     newcertlevel = the certainty level of a new indeterminate range which you want to create. It should lie on the range 0.5<x<1
 #
 #-----------------------------------------------
-cutoffobject<-cutoff(modelpickobj = modelpickobject, cutcomp = 1, standardcert = T, newcertlevel = 0.95)
+#cutoffobject<-cutoff(modelpickobj = modelpickobject, cutcomp = 1, standardcert = T, newcertlevel = 0.95)
 
 #-----------------------------------------------
 #[VB]  Investigate resulting distributions and classifications
 #-----------------------------------------------
-cutuncertgraph(cutobj = cutoffobject)
-cutdistgraph(cutobj = cutoffobject)
+#cutuncertgraph(cutobj = cutoffobject)
+#cutdistgraph(cutobj = cutoffobject)
 
-summaryobject<-summaryout(cutobj = cutoffobject)
-outtable<-summaryobject$outtab
-outtable
+#summaryobject<-summaryout(cutobj = cutoffobject)
+#outtable<-summaryobject$outtab
+#outtable
 
 
 
