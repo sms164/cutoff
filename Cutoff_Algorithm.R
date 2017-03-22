@@ -9,7 +9,7 @@
 
 
 #To complete this process, there are 5 necessary steps
-#I)   Install/load packages and load in functions (run lines 73 - 1350)
+#I)   Install/load packages and load in functions (run lines 67 - 1350)
 #II)  Load in data (run lines: 1370)
 #III) Run each line of code separately, from 1380 to the end of the program, following the directions in the comments
 #     The code will: 1)determine which type of distribution and number of sub-populations is optimal; 2) let the user  
@@ -873,7 +873,7 @@ cutoff<-function(modelpickobj, cutcomp=0, standardcert=T, newcertlevel=0){
 }
 
 #-----------------------------------------------
-#[IC12] cutuncertgraph
+#[IC12] cutuncertgraph: not yet usable
 #-----------------------------------------------
 #Displays the uncertainty function after components have been combined to create positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively).
 cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppresslegend=F,setcolor=c(
@@ -932,7 +932,7 @@ cutuncertgraph<-function(cutobj,xlab="Optical Density",xlim=c(NA,NA),suppressleg
 }
 
 #-----------------------------------------------
-#[IC13]  cutdistgraph
+#[IC13]  cutdistgraph: not yet usable
 #-----------------------------------------------
 #Displays the distributions of the positive and negative components with cut-points and bounds of indeterminate range(s) overlaid. Accepts results from both standard and nonstandard cutpoints (from the functions standindet and specindet respectively). 
 cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbreaks=100,suppresslegend=F,setcolor=c(
@@ -1041,10 +1041,12 @@ cutdistgraph<-function(cutobj,pickobj,xlim=c(NA,NA),xlab="Optical Density",setbr
 }
 
 #-----------------------------------------------
-#[IC14]  summaryout: combine outputdata and summarytable
+#[IC14]  summaryout: not yet usable
 #-----------------------------------------------
 
-outputdata<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
+#Creates table which summarizes the results of the cutting functions, yeilding the cutpoint, indeterminate ranges, counts and percentages for the dichotomous cut, 80 and 90 indeterminate ranges and (if desired) one non-standard uncertainty level.
+summaryout<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
+  
   if (is.null(standindetobj)==T & is.null(specindetobj)==T) {
     print("At least one post-cut object must be included")
   } else {
@@ -1063,10 +1065,9 @@ outputdata<-function(standindetobj=NULL,specindetobj=NULL,fileandpathname=NULL){
       write.csv(dataout, file =paste(fileandpathname, ".csv", sep=""), row.names=F)
     }
   }
-  return(dataout)
-}
-#Creates table which summarizes the results of the cutting functions, yeilding the cutpoint, indeterminate ranges, counts and percentages for the dichotomous cut, 80 and 90 indeterminate ranges and (if desired) one non-standard uncertainty level.
-summarytable<-function(outdataobj,standindetobj=NULL,specindetobj=NULL){
+  
+  outdataobj<-dataout
+  
   comptable <- function(table){
     dftable<-as.data.frame(table)
     len<-nrow(dftable)
