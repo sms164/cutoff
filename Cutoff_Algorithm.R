@@ -411,7 +411,7 @@ modelpick<-function(fitobj, dist="", ncomp=NA){
     
   fit<-singlefit
   #Create Uncertainties
-  v<-c(seq(min(data),max(data),(max(data)/min(data))*0.0001)) 
+  v<-c(seq(min(data),max(data),(max(data)-min(data))*0.0001)) 
   
   nl<-length(v)
   PD<-vector(mode="numeric", length=n)
